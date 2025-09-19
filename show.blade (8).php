@@ -351,6 +351,51 @@
             font-weight: bold;
         }
         
+        .poster-item.pending {
+            border: 2px solid #f59e0b;
+            opacity: 0.8;
+        }
+        
+        .poster-item.synced {
+            border: 2px solid #10b981;
+        }
+        
+        .poster-item.pending::before {
+            content: 'P';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #f59e0b;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        
+        .poster-item.synced::before {
+            content: '✓';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        
         .more-indicator {
             position: absolute !important;
             bottom: 6px !important;
@@ -1128,6 +1173,10 @@
                         filtered = events.filter(e => parseInt(e.type ?? 0, 10) === 3);
                     } else if (filter === 'series') {
                         filtered = events.filter(e => parseInt(e.type ?? 0, 10) === 2);
+                    } else if (filter === 'pending') {
+                        filtered = events.filter(e => (e.local_status || 'Pendente') === 'Pendente');
+                    } else if (filter === 'synced') {
+                        filtered = events.filter(e => (e.local_status || 'Pendente') === 'Sincronizado');
                     }
 
                     const badge = cell.querySelector('.releases-count');
@@ -1137,7 +1186,15 @@
                         const hasSeries = filtered.some(e => parseInt(e.type ?? 0, 10) === 2);
                         if (hasAnime && !hasSeries) badge.classList.add('anime-only');
                         else if (hasSeries && !hasAnime) badge.classList.add('series-only');
-                        badge.textContent = `${filtered.length} lanç.`;
+                        
+                        // Update badge text based on filter
+                        if (filter === 'pending') {
+                            badge.textContent = `${filtered.length} pend.`;
+                        } else if (filter === 'synced') {
+                            badge.textContent = `${filtered.length} sinc.`;
+                        } else {
+                            badge.textContent = `${filtered.length} lanç.`;
+                        }
                     }
 
                     // Limpa e recria grid
@@ -1151,12 +1208,14 @@
                             const poster = item.poster || item.poster_path || '';
                             const t = parseInt(item.type ?? 0, 10);
                             const cls = (t === 3) ? 'anime' : 'series';
-                            html += `<div class="poster-item ${cls}">`;
+                            const localStatus = item.local_status || 'Pendente';
+                            const statusClass = localStatus === 'Sincronizado' ? 'synced' : 'pending';
+                            html += `<div class="poster-item ${cls} ${statusClass}">`;
                             if (poster) {
                                 const season = item.season || item.season_number || 0;
                                 const ep = String(item.number || item.episode_number || 0).padStart(2, '0');
                                 const title = item.title || 'Título';
-                                html += `<img src="https://image.tmdb.org/t/p/w200${poster}" alt="${title}" onerror="this.style.display='none'" title="${title} - S${season}E${ep}">`;
+                                html += `<img src="https://image.tmdb.org/t/p/w200${poster}" alt="${title}" onerror="this.style.display='none'" title="${title} - S${season}E${ep} (${localStatus})">`;
                             }
                             html += `</div>`;
                         });
@@ -1210,6 +1269,8 @@
                         }
 
                         if (filter === 'series' || filter === 'anime') {
+                            rebuildCellPosters(cell, filter);
+                        } else if (filter === 'pending' || filter === 'synced') {
                             rebuildCellPosters(cell, filter);
                         } else {
                             rebuildCellPosters(cell, 'all');
@@ -1343,9 +1404,14 @@
                         const poster = item.poster || item.poster_path || '';
                         const t = parseInt(item.type ?? 0, 10);
                         const cls = (t === 3) ? 'anime' : 'series';
-                        html += `<div class="poster-item ${cls}">`;
+                        const localStatus = item.local_status || 'Pendente';
+                        const statusClass = localStatus === 'Sincronizado' ? 'synced' : 'pending';
+                        html += `<div class="poster-item ${cls} ${statusClass}">`;
                         if (poster) {
-                            html += `<img src="https://image.tmdb.org/t/p/w200${poster}" alt="${(item.title || 'Título')}" onerror="this.style.display='none'" title="${(item.title || 'Título')} - S${item.season || item.season_number || 0}E${String(item.number || item.episode_number || 0).padStart(2,'0')}">`;
+                            const season = item.season || item.season_number || 0;
+                            const ep = String(item.number || item.episode_number || 0).padStart(2, '0');
+                            const title = item.title || 'Título';
+                            html += `<img src="https://image.tmdb.org/t/p/w200${poster}" alt="${title}" onerror="this.style.display='none'" title="${title} - S${season}E${ep} (${localStatus})">`;
                         }
                         html += `</div>`;
                     });
@@ -1654,24 +1720,35 @@
                     // syncType: 'all' | 'series' | 'anime'
                     const cells = document.querySelectorAll('.calendar-day-cell.has-events');
                     const idsSet = new Set();
+                    let debugInfo = { totalEvents: 0, filteredEvents: 0, updatedEvents: 0 };
 
                     cells.forEach(cell => {
                         const events = parseEventsFromCell(cell);
+                        debugInfo.totalEvents += events.length;
+                        
                         events.forEach(ev => {
-                            // Sincronizamos apenas itens com status da API "Atualizado"
-                            if ((ev.status || '') !== 'Atualizado') return;
-
                             const t = parseInt(ev.type ?? 0, 10);
+                            
+                            // Apply content type filter first
                             if (syncType === 'series' && t !== 2) return;
                             if (syncType === 'anime' && t !== 3) return;
-
-                            // Se já está localmente sincronizado, pode pular — o endpoint vai tratar como 208 também
+                            
+                            debugInfo.filteredEvents++;
+                            
+                            // Sincronizamos apenas itens com status da API "Atualizado"
+                            if ((ev.status || '') !== 'Atualizado') return;
+                            
+                            debugInfo.updatedEvents++;
+                            
                             const tmdbId = ev.tmdb_id;
                             if (!tmdbId) return;
                             idsSet.add(String(tmdbId));
                         });
                     });
 
+                    console.log(`Coleta de IDs para sincronização (${syncType}):`, debugInfo);
+                    console.log(`Total de séries únicas encontradas: ${idsSet.size}`);
+                    
                     return Array.from(idsSet.values());
                 }
 
@@ -1694,7 +1771,7 @@
                         progressBar.style.width = pct + '%';
                     }
                     if (progressStats) {
-                        progressStats.textContent = `${processed}/${total} processados`;
+                        progressStats.textContent = `${processed}/${total} processados (itens únicos da API com status "Atualizado")`;
                     }
                     if (createdCountEl) createdCountEl.textContent = created;
                     if (updatedCountEl) updatedCountEl.textContent = updated;
@@ -1728,11 +1805,24 @@
 
                     if (total === 0) {
                         updateProgress(0, 0, 0, 0, 0, 0);
+                        const progressTitle = document.getElementById('progress-title');
+                        if (progressTitle) {
+                            progressTitle.textContent = 'Nenhum item encontrado para sincronizar';
+                        }
                         alert('Nenhum item "Atualizado" encontrado para este filtro.');
                         toggleSyncButtons(true);
                         hideProgress();
                         isBulkSyncRunning = false;
                         return;
+                    }
+
+                    // Update progress title to be more informative
+                    const progressTitle = document.getElementById('progress-title');
+                    if (progressTitle) {
+                        let typeText = '';
+                        if (syncType === 'series') typeText = ' (séries)';
+                        else if (syncType === 'anime') typeText = ' (animes)';
+                        progressTitle.textContent = `Sincronizando ${total} itens da API${typeText}...`;
                     }
 
                     let processed = 0, created = 0, updated = 0, skipped = 0, failed = 0;
