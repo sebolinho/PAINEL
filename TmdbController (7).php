@@ -42,7 +42,7 @@ class TmdbController extends Controller
                 if (is_array($rawCalendarData)) {
                     $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->all();
 
-                    // Episódios locais existentes (para marcar status local no calendário)
+                    // Obter todos os episódios locais para verificação completa de sincronização
                     $localEpisodes = PostEpisode::query()
                         ->join('posts', 'post_episodes.post_id', '=', 'posts.id')
                         ->whereIn('posts.tmdb_id', $tmdbIds)
@@ -50,14 +50,46 @@ class TmdbController extends Controller
                         ->get(['posts.tmdb_id', 'post_episodes.season_number', 'post_episodes.episode_number'])
                         ->keyBy(fn($item) => $item->tmdb_id . '-' . $item->season_number . '-' . $item->episode_number);
 
-                    $enrichedCalendarData = array_map(function ($item) use ($localEpisodes, &$calendarStats) {
+                    // Agrupar episódios da API por TMDB ID e temporada para verificação completa
+                    $apiEpisodesBySeries = collect($rawCalendarData)->groupBy('tmdb_id');
+                    
+                    // Verificar sincronização completa por série/temporada
+                    $seriesSync = [];
+                    foreach ($apiEpisodesBySeries as $tmdbId => $episodes) {
+                        $seasonGroups = collect($episodes)->groupBy(fn($ep) => $ep['season'] ?? $ep['season_number'] ?? 0);
+                        
+                        foreach ($seasonGroups as $seasonNumber => $seasonEpisodes) {
+                            // Verificar se TODOS os episódios desta temporada existem no banco
+                            $allEpisodesExist = true;
+                            foreach ($seasonEpisodes as $episode) {
+                                $episodeNumber = $episode['number'] ?? $episode['episode_number'] ?? null;
+                                $key = $tmdbId . '-' . $seasonNumber . '-' . $episodeNumber;
+                                if (!$localEpisodes->has($key)) {
+                                    $allEpisodesExist = false;
+                                    break;
+                                }
+                            }
+                            
+                            $seriesSync[$tmdbId][$seasonNumber] = $allEpisodesExist;
+                        }
+                    }
+
+                    $enrichedCalendarData = array_map(function ($item) use ($localEpisodes, $seriesSync, &$calendarStats) {
                         $seasonNumber = $item['season'] ?? $item['season_number'] ?? null;
                         $episodeNumber = $item['number'] ?? $item['episode_number'] ?? null;
                         $tmdbId = $item['tmdb_id'] ?? null;
                         $key = $tmdbId . '-' . $seasonNumber . '-' . $episodeNumber;
                         
-                        $isLocal = ($tmdbId && $localEpisodes->has($key));
-                        $item['local_status'] = $isLocal ? 'Sincronizado' : 'Pendente';
+                        // Verificação individual do episódio
+                        $episodeExists = ($tmdbId && $localEpisodes->has($key));
+                        
+                        // Verificação se a série/temporada está completamente sincronizada
+                        $seasonFullySynced = isset($seriesSync[$tmdbId][$seasonNumber]) ? $seriesSync[$tmdbId][$seasonNumber] : false;
+                        
+                        // Marcar como sincronizado APENAS se a temporada inteira estiver sincronizada
+                        $item['local_status'] = $seasonFullySynced ? 'Sincronizado' : 'Pendente';
+                        $item['episode_exists'] = $episodeExists; // Informação adicional para debug
+                        $item['debug_info'] = "TMDB: {$tmdbId}, Temporada: {$seasonNumber}, Episódio: {$episodeNumber}";
                         
                         // Tipos: series=2, anime=3
                         $type = (int)($item['type'] ?? 0);
@@ -74,7 +106,7 @@ class TmdbController extends Controller
                         if ($isSeries) {
                             $calendarStats['series']++;
                         }
-                        if ($isLocal) {
+                        if ($seasonFullySynced) {
                             $calendarStats['synchronized']++;
                         } else {
                             $calendarStats['pending']++;
@@ -187,6 +219,8 @@ class TmdbController extends Controller
                 $rawCalendarData = $response->json();
                 if (is_array($rawCalendarData)) {
                     $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->all();
+                    
+                    // Obter todos os episódios locais para verificação completa de sincronização
                     $localEpisodes = PostEpisode::query()
                         ->join('posts', 'post_episodes.post_id', '=', 'posts.id')
                         ->whereIn('posts.tmdb_id', $tmdbIds)
@@ -194,14 +228,46 @@ class TmdbController extends Controller
                         ->get(['posts.tmdb_id', 'post_episodes.season_number', 'post_episodes.episode_number'])
                         ->keyBy(fn($item) => $item->tmdb_id . '-' . $item->season_number . '-' . $item->episode_number);
 
-                    $enrichedCalendarData = array_map(function ($item) use ($localEpisodes, &$calendarStats) {
+                    // Agrupar episódios da API por TMDB ID e temporada para verificação completa
+                    $apiEpisodesBySeries = collect($rawCalendarData)->groupBy('tmdb_id');
+                    
+                    // Verificar sincronização completa por série/temporada
+                    $seriesSync = [];
+                    foreach ($apiEpisodesBySeries as $tmdbId => $episodes) {
+                        $seasonGroups = collect($episodes)->groupBy(fn($ep) => $ep['season'] ?? $ep['season_number'] ?? 0);
+                        
+                        foreach ($seasonGroups as $seasonNumber => $seasonEpisodes) {
+                            // Verificar se TODOS os episódios desta temporada existem no banco
+                            $allEpisodesExist = true;
+                            foreach ($seasonEpisodes as $episode) {
+                                $episodeNumber = $episode['number'] ?? $episode['episode_number'] ?? null;
+                                $key = $tmdbId . '-' . $seasonNumber . '-' . $episodeNumber;
+                                if (!$localEpisodes->has($key)) {
+                                    $allEpisodesExist = false;
+                                    break;
+                                }
+                            }
+                            
+                            $seriesSync[$tmdbId][$seasonNumber] = $allEpisodesExist;
+                        }
+                    }
+
+                    $enrichedCalendarData = array_map(function ($item) use ($localEpisodes, $seriesSync, &$calendarStats) {
                         $seasonNumber = $item['season'] ?? $item['season_number'] ?? null;
                         $episodeNumber = $item['number'] ?? $item['episode_number'] ?? null;
                         $tmdbId = $item['tmdb_id'] ?? null;
                         $key = $tmdbId . '-' . $seasonNumber . '-' . $episodeNumber;
                         
-                        $isLocal = ($tmdbId && $localEpisodes->has($key));
-                        $item['local_status'] = $isLocal ? 'Sincronizado' : 'Pendente';
+                        // Verificação individual do episódio
+                        $episodeExists = ($tmdbId && $localEpisodes->has($key));
+                        
+                        // Verificação se a série/temporada está completamente sincronizada
+                        $seasonFullySynced = isset($seriesSync[$tmdbId][$seasonNumber]) ? $seriesSync[$tmdbId][$seasonNumber] : false;
+                        
+                        // Marcar como sincronizado APENAS se a temporada inteira estiver sincronizada
+                        $item['local_status'] = $seasonFullySynced ? 'Sincronizado' : 'Pendente';
+                        $item['episode_exists'] = $episodeExists; // Informação adicional para debug
+                        $item['debug_info'] = "TMDB: {$tmdbId}, Temporada: {$seasonNumber}, Episódio: {$episodeNumber}";
                         
                         $type = (int)($item['type'] ?? 0);
                         $isAnime = ($type === 3);
@@ -212,7 +278,7 @@ class TmdbController extends Controller
                         $calendarStats['total']++;
                         if ($isAnime) $calendarStats['animes']++;
                         if ($isSeries) $calendarStats['series']++;
-                        if ($isLocal) $calendarStats['synchronized']++;
+                        if ($seasonFullySynced) $calendarStats['synchronized']++;
                         else $calendarStats['pending']++;
                         
                         return $item;
@@ -294,10 +360,42 @@ class TmdbController extends Controller
                 $isUpdate = true;
                 $apiSeasonCount = count($postArray['seasons'] ?? []);
                 $dbSeasonCount = $existingPost->seasons()->count();
-                $apiEpisodeCount = array_sum(array_map(fn($s) => count(json_decode($s['episode'], true) ?? []), $postArray['seasons'] ?? []));
+                
+                // Calcular número total de episódios da API
+                $apiEpisodeCount = 0;
+                $apiEpisodesBySeasonAndNumber = [];
+                foreach ($postArray['seasons'] ?? [] as $seasonData) {
+                    $seasonNumber = $seasonData['season_number'] ?? 0;
+                    $episodes = json_decode($seasonData['episode'], true) ?? [];
+                    $apiEpisodeCount += count($episodes);
+                    
+                    // Mapear episódios por temporada e número para verificação precisa
+                    foreach ($episodes as $episode) {
+                        $episodeNumber = $episode['episode_number'] ?? 0;
+                        $apiEpisodesBySeasonAndNumber["{$seasonNumber}-{$episodeNumber}"] = true;
+                    }
+                }
+                
+                // Calcular número de episódios no banco
                 $dbEpisodeCount = $existingPost->episodes()->count();
+                
+                // Verificar se todos os episódios da API já existem no banco
+                $dbEpisodesBySeasonAndNumber = [];
+                $existingEpisodes = $existingPost->episodes()->get(['season_number', 'episode_number']);
+                foreach ($existingEpisodes as $episode) {
+                    $dbEpisodesBySeasonAndNumber["{$episode->season_number}-{$episode->episode_number}"] = true;
+                }
+                
+                // Verificar se todos os episódios da API existem no banco
+                $allApiEpisodesExist = true;
+                foreach (array_keys($apiEpisodesBySeasonAndNumber) as $episodeKey) {
+                    if (!isset($dbEpisodesBySeasonAndNumber[$episodeKey])) {
+                        $allApiEpisodesExist = false;
+                        break;
+                    }
+                }
 
-                if ($apiSeasonCount <= $dbSeasonCount && $apiEpisodeCount <= $dbEpisodeCount) {
+                if ($apiSeasonCount <= $dbSeasonCount && $allApiEpisodesExist) {
                     return response()->json(['message' => 'Série já está atualizada, ignorada.'], 208);
                 }
                 
