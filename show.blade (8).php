@@ -568,6 +568,13 @@
             color: white;
         }
         
+        .status-episode-exists {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+        
         .episode-title {
             color: white;
             font-weight: 700;
@@ -1405,6 +1412,8 @@
                             const t = parseInt(item.type ?? 0, 10);
                             const contentType = (t === 3) ? 'anime' : 'series';
                             const isSynced = localStatus === 'Sincronizado';
+                            const episodeExists = item.episode_exists || false;
+                            const debugInfo = item.debug_info || '';
                             html += `
                                 <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${(apiStatus === 'Atualizado') ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
                                     <div class="episode-header">
@@ -1415,10 +1424,12 @@
                                             <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">
                                                 Local: ${isSynced ? 'Sincronizado' : 'Pendente'}
                                             </span>
+                                            ${episodeExists && !isSynced ? `<span class="status-badge status-episode-exists">Ep. Existe</span>` : ''}
                                         </div>
                                     </div>
                                     <div class="episode-title">${seriesTitle}</div>
                                     <div class="episode-number">T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
+                                    <div class="episode-debug" style="font-size: 10px; color: #666; margin-top: 4px;">${debugInfo}</div>
                                     <div class="episode-actions">
                                         <button class="sync-single-button js-sync-single-item" title="Sincronizar Série">
                                             <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
