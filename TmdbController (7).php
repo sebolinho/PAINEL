@@ -89,7 +89,7 @@ class TmdbController extends Controller
                         // Marcar como sincronizado APENAS se a temporada inteira estiver sincronizada
                         $item['local_status'] = $seasonFullySynced ? 'Sincronizado' : 'Pendente';
                         $item['episode_exists'] = $episodeExists; // Informação adicional para debug
-                        $item['debug_info'] = "TMDB: {$tmdbId}, Temporada: {$seasonNumber}, Episódio: {$episodeNumber}";
+                        $item['debug_info'] = "TMDB: {$tmdbId}, T{$seasonNumber}E{$episodeNumber}, Status: " . ($seasonFullySynced ? 'Sincronizado' : 'Pendente');
                         
                         // Tipos: series=2, anime=3
                         $type = (int)($item['type'] ?? 0);
@@ -267,7 +267,7 @@ class TmdbController extends Controller
                         // Marcar como sincronizado APENAS se a temporada inteira estiver sincronizada
                         $item['local_status'] = $seasonFullySynced ? 'Sincronizado' : 'Pendente';
                         $item['episode_exists'] = $episodeExists; // Informação adicional para debug
-                        $item['debug_info'] = "TMDB: {$tmdbId}, Temporada: {$seasonNumber}, Episódio: {$episodeNumber}";
+                        $item['debug_info'] = "TMDB: {$tmdbId}, T{$seasonNumber}E{$episodeNumber}, Status: " . ($seasonFullySynced ? 'Sincronizado' : 'Pendente');
                         
                         $type = (int)($item['type'] ?? 0);
                         $isAnime = ($type === 3);
