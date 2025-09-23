@@ -34,11 +34,13 @@ class TmdbController extends Controller
 
         $calendarData = $this->getEnrichedCalendarData();
         $recentMoviesData = $this->getRecentMoviesData();
+        $recentSeriesData = $this->getRecentSeriesData();
 
         return view('admin.tmdb.show', array_merge(
             compact('config', 'request'),
             $calendarData,
-            $recentMoviesData
+            $recentMoviesData,
+            $recentSeriesData
         ));
     }
     
@@ -121,11 +123,13 @@ class TmdbController extends Controller
         
         $calendarData = $this->getEnrichedCalendarData();
         $recentMoviesData = $this->getRecentMoviesData();
+        $recentSeriesData = $this->getRecentSeriesData();
 
         return view('admin.tmdb.show', array_merge(
             compact('config', 'request', 'listings', 'result'),
             $calendarData,
-            $recentMoviesData
+            $recentMoviesData,
+            $recentSeriesData
         ));
     }
     
@@ -298,6 +302,83 @@ class TmdbController extends Controller
         }
 
         return compact('recentMovies', 'recentMoviesError');
+    }
+
+    /**
+     * Busca dados de séries recentes de uma API externa.
+     *
+     * @return array
+     */
+    private function getRecentSeriesData(): array
+    {
+        $recentSeries = [];
+        $recentSeriesError = null;
+
+        try {
+            $response = Http::timeout(30)->get('https://superflixapi.asia/lista?category=serie&type=tmdb&format=json');
+            if (!$response->successful()) {
+                throw new \Exception('Falha ao buscar a lista de séries recentes. Código: ' . $response->status());
+            }
+            
+            $ids = $response->json();
+            if (!is_array($ids)) {
+                throw new \Exception('A API de séries recentes retornou dados em um formato inesperado (não é um JSON array).');
+            }
+
+            $tmdbIds = collect($ids)
+                ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                ->filter(fn($id) => is_numeric($id))
+                ->map(fn($id) => (int)$id);
+
+            $latestTmdbIds = $tmdbIds->take(-100)->values()->all();
+
+            if (empty($latestTmdbIds)) {
+                return compact('recentSeries', 'recentSeriesError');
+            }
+            
+            $existingSeriesIds = Post::where('type', 'tv')
+                ->whereIn('tmdb_id', $latestTmdbIds)
+                ->pluck('tmdb_id')
+                ->all();
+                
+            $newSeriesIds = array_values(array_diff($latestTmdbIds, $existingSeriesIds));
+
+            foreach ($newSeriesIds as $id) {
+                // Buscar e montar dados consistentes para a view
+                $details = Cache::remember('tmdb_series_details_' . $id, 1440, function () use ($id) {
+                    try {
+                        return $this->tmdbApiTrait('tv', $id);
+                    } catch (\Throwable $e) {
+                        Log::warning("Falha ao buscar detalhes do TMDB para série {$id}: " . $e->getMessage());
+                        return null;
+                    }
+                });
+
+                if (!$details || empty($details['title'])) {
+                    Log::warning("Série recente com TMDB ID {$id} foi ignorada por falta de detalhes (ex: título).");
+                    continue;
+                }
+
+                $image = $details['image'] ?? null;
+                if (!$image && !empty($details['poster'])) {
+                    $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
+                }
+
+                $recentSeries[] = [
+                    'id' => (int)($details['tmdb_id'] ?? $id),
+                    'title' => $details['title'] ?? 'Sem título',
+                    'overview' => $details['overview'] ?? '',
+                    'release_date' => $details['release_date'] ?? '',
+                    'vote_average' => $details['vote_average'] ?? 0,
+                    'image' => $image ?: '',
+                ];
+            }
+        } catch (\Exception $e) {
+            $recentSeriesError = $e->getMessage();
+            Log::error("Erro ao buscar séries recentes: " . $recentSeriesError);
+        }
+
+        return compact('recentSeries', 'recentSeriesError');
     }
 
     public function settings(Request $request)
@@ -609,6 +690,55 @@ class TmdbController extends Controller
 
         } catch (\Exception $e) {
             $errorMsg = "Erro no CRON de filmes recentes: " . $e->getMessage();
+            Log::error($errorMsg);
+            return response($errorMsg, 500);
+        }
+    }
+
+    /**
+     * Método para ser chamado via CRON Job para sincronizar as séries recentes.
+     */
+    public function cronSyncRecentSeries($key)
+    {
+        $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
+        if ($key !== $secretKey) {
+            return response('Acesso não autorizado.', 403);
+        }
+
+        set_time_limit(3600);
+
+        try {
+            $recentSeriesData = $this->getRecentSeriesData();
+            $newSeriesIds = collect($recentSeriesData['recentSeries'])->pluck('id')->all();
+
+            if (empty($newSeriesIds)) {
+                return response('Nenhuma série nova para sincronizar.');
+            }
+
+            $created = 0; $failed = 0; $skipped = 0;
+
+            foreach ($newSeriesIds as $tmdbId) {
+                try {
+                    $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'tv']);
+                    $storeResponse = $this->store($request);
+                    $status = $storeResponse->getStatusCode();
+
+                    if ($status === 200) $created++;
+                    elseif ($status === 208) $skipped++;
+                    else $failed++;
+                } catch (\Exception $e) {
+                    Log::error("CRON Sync (Séries) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
+                    $failed++;
+                }
+            }
+            
+            $summary = "Sincronização de séries via CRON concluída. Criados: {$created}, Ignorados: {$skipped}, Falhas: {$failed}.";
+            Log::info($summary);
+            
+            return response($summary);
+
+        } catch (\Exception $e) {
+            $errorMsg = "Erro no CRON de séries recentes: " . $e->getMessage();
             Log::error($errorMsg);
             return response($errorMsg, 500);
         }

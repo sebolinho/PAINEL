@@ -643,6 +643,9 @@
                     <button id="tab-recent-movies" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         Filmes Recentes
                     </button>
+                    <button id="tab-recent-series" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Séries Recentes
+                    </button>
                 </nav>
             </div>
 
@@ -1114,6 +1117,122 @@
                                 <td colspan="4" class="text-center py-10 px-6">
                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo encontrado</h3>
                                    <p class="mt-1 text-sm text-gray-500">Todos os filmes recentes da API já parecem estar em seu banco de dados.</p>
+                                </td>
+                            </tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="content-recent-series" class="main-tab-content hidden">
+                <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Importar Séries Recentes</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Lista das últimas 100 séries novas da API. Séries que já existem no seu banco de dados não são exibidas.
+                            </p>
+                        </div>
+                        <button id="start-recent-series-import" class="sync-button">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Importar Séries Listadas
+                        </button>
+                    </div>
+                     <div id="recent-series-import-status" class="sync-progress mt-4">
+                        <div class="progress-header">
+                            <div class="progress-title">Importando Séries...</div>
+                            <div class="progress-stats" id="recent-series-progress-stats">0/0 processados</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="recent-series-progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="text-green-400">Criados: <span id="recent-series-created-count">0</span></span> |
+                            <span class="text-yellow-400">Ignorados: <span id="recent-series-skipped-count">0</span></span> |
+                            <span class="text-red-400">Falhas: <span id="recent-series-failed-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="">
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Heading')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Release date')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Popularity')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">Ações</div>
+                            </th>
+                        </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @if(isset($recentSeries) && count($recentSeries) > 0)
+                            @foreach($recentSeries as $listing)
+                                <tr class="recent-series-row" data-tmdb-id="{{ $listing['id'] ?? ($listing['tmdb_id'] ?? '') }}">
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3">
+                                            <div class="text-sm text-gray-600 dark:text-gray-200 flex items-center space-x-6 group">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-14 overflow-hidden relative">
+                                                    @php $img = $listing['image'] ?? ''; @endphp
+                                                    @if($img)
+                                                        <img src="{{$img}}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium group-hover:underline mb-2">{{ $listing['title'] ?? 'Sem título' }} (ID: {{ $listing['id'] ?? '—' }})</div>
+                                                    <div class="text-xs text-gray-400 dark:text-gray-500">{{ \Illuminate\Support\Str::limit($listing['overview'] ?? '', 80) }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3">
+                                            @php $rd = $listing['release_date'] ?? null; @endphp
+                                            <div class="text-sm text-gray-400 dark:text-gray-500">{{ $rd ? date('Y', strtotime($rd)) : '—' }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3 flex items-center space-x-6">
+                                            @php $va = (float)($listing['vote_average'] ?? 0); @endphp
+                                            <div class="flex max-w-[100px] w-full h-2 bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                                                <div class="flex flex-col justify-center rounded-full overflow-hidden @if($va <5){{'bg-red-500'}}@elseif($va >=5 AND $va <= 7){{'bg-orange-400'}}@elseif($va >7){{'bg-emerald-500'}}@endif"
+                                                    role="progressbar" style="width: {{ ($va / 10) * 100 }}%"
+                                                    aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="text-sm font-medium text-gray-500 dark:text-gray-300">{{ number_format($va, 1) }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3 flex justify-end">
+                                            <button type="button" class="sync-single-button js-import-recent-series">
+                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg>
+                                                Importar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @elseif(isset($recentSeriesError))
+                            <tr>
+                                <td colspan="4" class="text-center py-10 px-6">
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar séries recentes</h3>
+                                    <p class="mt-1 text-sm text-red-500">{{ $recentSeriesError }}</p>
+                                </td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td colspan="4" class="text-center py-10 px-6">
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhuma série nova encontrada</h3>
+                                   <p class="mt-1 text-sm text-gray-500">Todas as séries recentes da API já parecem estar em seu banco de dados.</p>
                                 </td>
                             </tr>
                         @endif
@@ -1800,6 +1919,92 @@
                         }
 
                         alert(`Importação de filmes concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // Importação por linha (Séries Recentes)
+                const recentSeriesContainer = document.getElementById('content-recent-series');
+                if (recentSeriesContainer) {
+                    recentSeriesContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-recent-series');
+                        if (!btn) return;
+                        const row = btn.closest('.recent-series-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'tv');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    });
+                }
+                
+                const startRecentSeriesBtn = document.getElementById('start-recent-series-import');
+                if (startRecentSeriesBtn) {
+                    startRecentSeriesBtn.addEventListener('click', async () => {
+                        const seriesRows = document.querySelectorAll('#content-recent-series .recent-series-row');
+                        const ids = Array.from(seriesRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhuma série nova para importar.'); return;
+                        }
+                        startRecentSeriesBtn.disabled = true;
+                        startRecentSeriesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('recent-series-import-status');
+                        const pBar = document.getElementById('recent-series-progress-bar');
+                        const pStats = document.getElementById('recent-series-progress-stats');
+                        const pCreated = document.getElementById('recent-series-created-count');
+                        const pSkipped = document.getElementById('recent-series-skipped-count');
+                        const pFailed = document.getElementById('recent-series-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'tv');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
                         window.location.reload();
                     });
                 }
