@@ -640,6 +640,9 @@
                     <button id="tab-calendar" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         Calendário de Lançamentos
                     </button>
+                    <button id="tab-recent-movies" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Filmes Recentes
+                    </button>
                 </nav>
             </div>
 
@@ -739,7 +742,7 @@
                                                     <img src="{{$listing['image']}}" class="absolute inset-0 object-cover">
                                                 </div>
                                                 <div>
-                                                    <div class="font-medium group-hover:underline mb-2">{{$listing['title']}}</div>
+                                                    <div class="font-medium group-hover:underline mb-2">{{$listing['title']}} (ID: {{$listing['id']}})</div>
                                                     <div class="text-xs text-gray-400 dark:text-gray-500">{{Str::limit($listing['overview'],80)}}</div>
                                                 </div>
                                             </a>
@@ -765,7 +768,7 @@
                                             <form method="post" action="{{route('admin.tmdb.store')}}" data-id="{{$listing['id']}}" class="ajax-form">
                                                 @csrf
                                                 <input type="hidden" name="tmdb_id" value="{{$listing['id']}}">
-                                                <input type="hidden" name="type" value="{{$listing['type']}}">
+                                                <input type="hidden" name="type" value="{{$listing['type'] ?? $request->type}}">
                                                 <x-form.secondary class="!px-6" size="sm" type="submit">{{__('Import')}}</x-form.secondary>
                                             </form>
                                         </div>
@@ -919,8 +922,8 @@
                                                 $hasEvents = $daysWithEvents->has($dayKey);
                                                 $dayEvents = $hasEvents ? $daysWithEvents->get($dayKey) : collect();
                                                 
-                                                $hasAnime = $dayEvents->filter(fn($i) => (int)($i['type'] ?? 0) === 3)->isNotEmpty();
-                                                $hasSeries = $dayEvents->filter(fn($i) => (int)($i['type'] ?? 0) === 2)->isNotEmpty();
+                                                $hasAnime = $dayEvents->filter(fn($i) => ($i['content_type'] ?? '') === 'anime')->isNotEmpty();
+                                                $hasSeries = $dayEvents->filter(fn($i) => ($i['content_type'] ?? '') === 'series')->isNotEmpty();
                                                 $hasPending = $dayEvents->where('local_status', 'Pendente')->isNotEmpty();
                                                 $hasSynced = $dayEvents->where('local_status', 'Sincronizado')->isNotEmpty();
                                                 
@@ -952,8 +955,7 @@
                                                         @foreach($dayEvents->take(4) as $item)
                                                             @php
                                                                 $poster = $item['poster'] ?? $item['poster_path'] ?? null;
-                                                                $t = (int)($item['type'] ?? 0);
-                                                                $contentTypeClass = $t === 3 ? 'anime' : ($t === 2 ? 'series' : 'series');
+                                                                $contentTypeClass = ($item['content_type'] ?? '') === 'anime' ? 'anime' : 'series';
                                                             @endphp
                                                             <div class="poster-item {{ $contentTypeClass }}">
                                                                 @if($poster)
@@ -1001,6 +1003,122 @@
                            <p class="mt-1 text-sm text-gray-500">Não há lançamentos futuros no calendário no momento.</p>
                         </div>
                     @endif
+                </div>
+            </div>
+
+            <div id="content-recent-movies" class="main-tab-content hidden">
+                <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Importar Filmes Recentes</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Lista dos últimos 100 filmes novos da API. Filmes que já existem no seu banco de dados não são exibidos.
+                            </p>
+                        </div>
+                        <button id="start-recent-movies-import" class="sync-button">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Importar Filmes Listados
+                        </button>
+                    </div>
+                     <div id="recent-movies-import-status" class="sync-progress mt-4">
+                        <div class="progress-header">
+                            <div class="progress-title">Importando Filmes...</div>
+                            <div class="progress-stats" id="recent-movies-progress-stats">0/0 processados</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="recent-movies-progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="text-green-400">Criados: <span id="recent-movies-created-count">0</span></span> |
+                            <span class="text-yellow-400">Ignorados: <span id="recent-movies-skipped-count">0</span></span> |
+                            <span class="text-red-400">Falhas: <span id="recent-movies-failed-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="">
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Heading')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Release date')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Popularity')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">Ações</div>
+                            </th>
+                        </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @if(isset($recentMovies) && count($recentMovies) > 0)
+                            @foreach($recentMovies as $listing)
+                                <tr class="recent-movie-row" data-tmdb-id="{{ $listing['id'] ?? ($listing['tmdb_id'] ?? '') }}">
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3">
+                                            <div class="text-sm text-gray-600 dark:text-gray-200 flex items-center space-x-6 group">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-14 overflow-hidden relative">
+                                                    @php $img = $listing['image'] ?? ''; @endphp
+                                                    @if($img)
+                                                        <img src="{{$img}}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium group-hover:underline mb-2">{{ $listing['title'] ?? 'Sem título' }} (ID: {{ $listing['id'] ?? '—' }})</div>
+                                                    <div class="text-xs text-gray-400 dark:text-gray-500">{{ \Illuminate\Support\Str::limit($listing['overview'] ?? '', 80) }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3">
+                                            @php $rd = $listing['release_date'] ?? null; @endphp
+                                            <div class="text-sm text-gray-400 dark:text-gray-500">{{ $rd ? date('Y', strtotime($rd)) : '—' }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3 flex items-center space-x-6">
+                                            @php $va = (float)($listing['vote_average'] ?? 0); @endphp
+                                            <div class="flex max-w-[100px] w-full h-2 bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                                                <div class="flex flex-col justify-center rounded-full overflow-hidden @if($va <5){{'bg-red-500'}}@elseif($va >=5 AND $va <= 7){{'bg-orange-400'}}@elseif($va >7){{'bg-emerald-500'}}@endif"
+                                                    role="progressbar" style="width: {{ ($va / 10) * 100 }}%"
+                                                    aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="text-sm font-medium text-gray-500 dark:text-gray-300">{{ number_format($va, 1) }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3 flex justify-end">
+                                            <button type="button" class="sync-single-button js-import-recent-movie">
+                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg>
+                                                Importar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @elseif(isset($recentMoviesError))
+                            <tr>
+                                <td colspan="4" class="text-center py-10 px-6">
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar filmes recentes</h3>
+                                    <p class="mt-1 text-sm text-red-500">{{ $recentMoviesError }}</p>
+                                </td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td colspan="4" class="text-center py-10 px-6">
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo encontrado</h3>
+                                   <p class="mt-1 text-sm text-gray-500">Todos os filmes recentes da API já parecem estar em seu banco de dados.</p>
+                                </td>
+                            </tr>
+                        @endif
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1113,27 +1231,32 @@
                     cell.dataset.events = encoded;
                 }
 
-                function rebuildCellPosters(cell, filter) {
+                function rebuildCellPosters(cell, contentTypeFilter, statusFilter = 'all') {
                     const events = parseEventsFromCell(cell);
-
                     let filtered = events;
-                    if (filter === 'anime') {
-                        filtered = events.filter(e => parseInt(e.type ?? 0, 10) === 3);
-                    } else if (filter === 'series') {
-                        filtered = events.filter(e => parseInt(e.type ?? 0, 10) === 2);
+
+                    if (contentTypeFilter === 'anime') {
+                        filtered = filtered.filter(e => (e.content_type ?? '') === 'anime');
+                    } else if (contentTypeFilter === 'series') {
+                        filtered = filtered.filter(e => (e.content_type ?? '') === 'series');
+                    }
+
+                    if (statusFilter === 'pending') {
+                        filtered = filtered.filter(e => (e.local_status ?? 'Pendente') === 'Pendente');
+                    } else if (statusFilter === 'synced') {
+                        filtered = filtered.filter(e => (e.local_status ?? 'Pendente') === 'Sincronizado');
                     }
 
                     const badge = cell.querySelector('.releases-count');
                     if (badge) {
                         badge.classList.remove('anime-only', 'series-only');
-                        const hasAnime = filtered.some(e => parseInt(e.type ?? 0, 10) === 3);
-                        const hasSeries = filtered.some(e => parseInt(e.type ?? 0, 10) === 2);
+                        const hasAnime = filtered.some(e => (e.content_type ?? '') === 'anime');
+                        const hasSeries = filtered.some(e => (e.content_type ?? '') === 'series');
                         if (hasAnime && !hasSeries) badge.classList.add('anime-only');
                         else if (hasSeries && !hasAnime) badge.classList.add('series-only');
                         badge.textContent = `${filtered.length} lanç.`;
                     }
 
-                    // Limpa e recria grid
                     cell.querySelector('.poster-grid')?.remove();
                     cell.querySelector('.more-indicator')?.remove();
 
@@ -1142,8 +1265,7 @@
                         let html = '<div class="poster-grid">';
                         first4.forEach(item => {
                             const poster = item.poster || item.poster_path || '';
-                            const t = parseInt(item.type ?? 0, 10);
-                            const cls = (t === 3) ? 'anime' : 'series';
+                            const cls = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
                             html += `<div class="poster-item ${cls}">`;
                             if (poster) {
                                 const season = item.season || item.season_number || 0;
@@ -1170,7 +1292,7 @@
 
                         if (filter === 'all') {
                             if (cell.classList.contains('has-events')) {
-                                rebuildCellPosters(cell, 'all');
+                                rebuildCellPosters(cell, 'all', 'all');
                             }
                             return;
                         }
@@ -1182,31 +1304,34 @@
                         }
 
                         let shouldShow = false;
+                        let contentTypeFilter = 'all';
+                        let statusFilter = 'all';
+
                         switch (filter) {
                             case 'series':
                                 shouldShow = cell.dataset.filterSeries === 'true';
+                                contentTypeFilter = 'series';
                                 break;
                             case 'anime':
                                 shouldShow = cell.dataset.filterAnime === 'true';
+                                contentTypeFilter = 'anime';
                                 break;
                             case 'pending':
                                 shouldShow = cell.dataset.filterPending === 'true';
+                                statusFilter = 'pending';
                                 break;
                             case 'synced':
                                 shouldShow = cell.dataset.filterSynced === 'true';
+                                statusFilter = 'synced';
                                 break;
                         }
-
+                        
                         if (!shouldShow) {
                             cell.classList.add('hidden');
                             return;
                         }
-
-                        if (filter === 'series' || filter === 'anime') {
-                            rebuildCellPosters(cell, filter);
-                        } else {
-                            rebuildCellPosters(cell, 'all');
-                        }
+                        
+                        rebuildCellPosters(cell, contentTypeFilter, statusFilter);
                     });
                 }
 
@@ -1215,7 +1340,6 @@
                     applyContentFilter(active ? active.dataset.filter : 'all');
                 }
 
-                // Filtros UI
                 const filterTabs = document.querySelectorAll('.filter-tab');
                 filterTabs.forEach(tab => {
                     tab.addEventListener('click', () => {
@@ -1225,7 +1349,6 @@
                     });
                 });
 
-                // View tabs (mês/semana/dia)
                 const viewTabs = document.querySelectorAll('.view-tab');
                 const monthYearTitle = document.getElementById('current-month-year');
                 const weekViewEl = document.getElementById('week-view');
@@ -1240,7 +1363,6 @@
                     });
                 });
 
-                // Navegação
                 const prevButton = document.getElementById('prev-month');
                 const nextButton = document.getElementById('next-month');
                 
@@ -1318,7 +1440,6 @@
                     return `${weekday}, ${formatDateBR(date)}`;
                 }
 
-                // Eventos (a partir do Month View DOM)
                 function getEventsForISO(iso) {
                     const [y, m, d] = iso.split('-');
                     const monthKey = `${y}-${m}`;
@@ -1334,8 +1455,7 @@
                     let html = '<div class="poster-grid">';
                     firstFour.forEach(item => {
                         const poster = item.poster || item.poster_path || '';
-                        const t = parseInt(item.type ?? 0, 10);
-                        const cls = (t === 3) ? 'anime' : 'series';
+                        const cls = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
                         html += `<div class="poster-item ${cls}">`;
                         if (poster) {
                             html += `<img src="https://image.tmdb.org/t/p/w200${poster}" alt="${(item.title || 'Título')}" onerror="this.style.display='none'" title="${(item.title || 'Título')} - S${item.season || item.season_number || 0}E${String(item.number || item.episode_number || 0).padStart(2,'0')}">`;
@@ -1352,17 +1472,13 @@
                 function renderWeekView(baseDate) {
                     const start = startOfWeek(baseDate);
                     const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-                    const header = `
-                        <div class="calendar-weekdays">
-                            ${ptWeekdayShort.map(w => `<div class="weekday">${w}</div>`).join('')}
-                        </div>
-                    `;
+                    const header = `<div class="calendar-weekdays">${ptWeekdayShort.map(w => `<div class="weekday">${w}</div>`).join('')}</div>`;
                     let grid = `<div class="calendar-grid">`;
                     days.forEach(day => {
                         const iso = formatISO(day);
                         const events = getEventsForISO(iso);
-                        const hasAnime = events.some(e => parseInt(e.type ?? 0,10) === 3);
-                        const hasSeries = events.some(e => parseInt(e.type ?? 0,10) === 2);
+                        const hasAnime = events.some(e => (e.content_type ?? '') === 'anime');
+                        const hasSeries = events.some(e => (e.content_type ?? '') === 'series');
                         let countClass = '';
                         if (hasAnime && !hasSeries) countClass = 'anime-only';
                         else if (hasSeries && !hasAnime) countClass = 'series-only';
@@ -1384,14 +1500,7 @@
                 function renderDayView(date) {
                     const iso = formatISO(date);
                     const events = getEventsForISO(iso);
-                    let html = `
-                        <div class="calendar-weekdays">
-                            <div class="weekday" style="grid-column: span 7; text-align:left;">
-                                ${formatDateLongBR(date)}
-                            </div>
-                        </div>
-                        <div style="padding: 0 15px 15px 15px;">
-                    `;
+                    let html = `<div class="calendar-weekdays"><div class="weekday" style="grid-column: span 7; text-align:left;">${formatDateLongBR(date)}</div></div><div style="padding: 0 15px 15px 15px;">`;
                     if (!events.length) {
                         html += `<div class="text-sm text-gray-300">Sem lançamentos neste dia.</div>`;
                     } else {
@@ -1402,68 +1511,45 @@
                             const tmdbId = item.tmdb_id || '';
                             const seasonNumber = item.season || item.season_number || 1;
                             const episodeNumber = item.number || item.episode_number || 1;
-                            const t = parseInt(item.type ?? 0, 10);
-                            const contentType = (t === 3) ? 'anime' : 'series';
+                            const contentType = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
                             const isSynced = localStatus === 'Sincronizado';
+                            const localCount = item.local_episode_count || 0;
+                            const apiCount = item.api_episode_count || 0;
+
                             html += `
                                 <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${(apiStatus === 'Atualizado') ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
                                     <div class="episode-header">
                                         <div class="episode-status-group">
-                                            <span class="status-badge ${(apiStatus === 'Atualizado') ? 'status-api-updated' : 'status-api-late'}">
-                                                API: ${(apiStatus === 'Atualizado') ? 'Atualizado' : (apiStatus || 'Desconhecido')}
-                                            </span>
-                                            <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">
-                                                Local: ${isSynced ? 'Sincronizado' : 'Pendente'}
-                                            </span>
+                                            <span class="status-badge ${(apiStatus === 'Atualizado') ? 'status-api-updated' : 'status-api-late'}">API: ${(apiStatus === 'Atualizado') ? 'Atualizado' : (apiStatus || 'Desconhecido')}</span>
+                                            <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">Local: ${isSynced ? 'Sincronizado' : 'Pendente'}</span>
                                         </div>
                                     </div>
-                                    <div class="episode-title">${seriesTitle}</div>
-                                    <div class="episode-number">T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
-                                    <div class="episode-actions">
-                                        <button class="sync-single-button js-sync-single-item" title="Sincronizar Série">
-                                            <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" />
-                                            </svg>
-                                            Sincronizar Série
-                                        </button>
+                                    <div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div>
+                                    <div class="episode-number">Episódio: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
+                                    <div class="episode-sync-info text-xs text-gray-400 mt-2">Status da Série: <b>${localCount} de ${apiCount}</b> episódios no banco de dados.</div>
+                                    <div class="episode-actions mt-2">
+                                        <button class="sync-single-button js-sync-single-item" title="Sincronizar Série"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg> Sincronizar Série</button>
                                     </div>
-                                </div>
-                            `;
+                                </div>`;
                         });
                     }
                     html += `</div>`;
                     dayViewEl.innerHTML = html;
                 }
 
-                // Inicial
                 updateCalendarView();
 
-                // Click dia -> modal
                 document.addEventListener('click', (e) => {
                     const dayCell = e.target.closest('.js-show-day-details');
                     if (dayCell) {
-                        const iso = dayCell.dataset.dateIso;
-                        if (iso) {
-                            currentDate = parseISO(iso);
-                        }
                         try {
-                            let rawData = dayCell.dataset.events || '[]';
-                            rawData = rawData.replace(/&quot;/g, '"')
-                                             .replace(/&#039;/g, "'")
-                                             .replace(/&amp;/g, "&")
-                                             .replace(/&lt;/g, "<")
-                                             .replace(/&gt;/g, ">");
-                            
-                            const eventsData = JSON.parse(rawData);
-                            const date = dayCell.dataset.date || formatDateLongBR(currentDate);
+                            const eventsData = parseEventsFromCell(dayCell);
+                            const date = dayCell.dataset.date || formatDateLongBR(new Date(dayCell.dataset.dateIso));
                             openModal(date, eventsData);
-                        } catch (error) {
-                            console.error('Error parsing events data:', error);
-                        }
+                        } catch (error) { console.error('Error parsing events data:', error); }
                     }
                 });
 
-                // Modal
                 const modal = document.getElementById('calendar-modal');
                 const modalTitle = document.getElementById('modal-title');
                 const modalBody = document.getElementById('modal-body');
@@ -1471,10 +1557,8 @@
 
                 const openModal = (date, eventsData) => {
                     if (!modal || !modalTitle || !modalBody) return;
-                    
                     modalTitle.textContent = date;
                     modalBody.innerHTML = ''; 
-
                     eventsData.forEach(item => {
                         const localStatus = item.local_status || 'Pendente';
                         const apiStatus = item.status || 'Futuro';
@@ -1482,99 +1566,23 @@
                         const tmdbId = item.tmdb_id || '';
                         const seasonNumber = item.season || item.season_number || 1;
                         const episodeNumber = item.number || item.episode_number || 1;
-                        const t = parseInt(item.type ?? 0, 10);
-                        const contentType = t === 3 ? 'anime' : 'series';
+                        const contentType = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
                         const isSynced = localStatus === 'Sincronizado';
-                        
-                        const eventHtml = `
-                            <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${apiStatus === 'Atualizado' ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
-                                <div class="episode-header">
-                                    <div class="episode-status-group">
-                                        <span class="status-badge ${apiStatus === 'Atualizado' ? 'status-api-updated' : 'status-api-late'}">
-                                            API: ${apiStatus === 'Atualizado' ? 'Atualizado' : (apiStatus || 'Desconhecido')}
-                                        </span>
-                                        <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">
-                                            Local: ${isSynced ? 'Sincronizado' : 'Pendente'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="episode-title">${seriesTitle}</div>
-                                <div class="episode-number">T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
-                                <div class="episode-actions">
-                                    <button class="sync-single-button js-sync-single-item" title="Sincronizar Série">
-                                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
-                                        </svg>
-                                        Sincronizar Série
-                                    </button>
-                                </div>
-                            </div>
-                        `;
+                        const localCount = item.local_episode_count || 0;
+                        const apiCount = item.api_episode_count || 0;
+                        const eventHtml = `<div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${apiStatus === 'Atualizado' ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv"><div class="episode-header"><div class="episode-status-group"><span class="status-badge ${apiStatus === 'Atualizado' ? 'status-api-updated' : 'status-api-late'}">API: ${apiStatus === 'Atualizado' ? 'Atualizado' : (apiStatus || 'Desconhecido')}</span><span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">Local: ${isSynced ? 'Sincronizado' : 'Pendente'}</span></div></div><div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div><div class="episode-number">Episódio: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div><div class="episode-sync-info text-xs text-gray-400 mt-2">Status da Série: <b>${localCount} de ${apiCount}</b> episódios no banco de dados.</div><div class="episode-actions mt-2"><button class="sync-single-button js-sync-single-item" title="Sincronizar Série"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" /></svg> Sincronizar Série</button></div></div>`;
                         modalBody.insertAdjacentHTML('beforeend', eventHtml);
                     });
-                    
                     modal.classList.add('show');
                 };
                 
-                const closeModal = () => {
-                    if (modal) modal.classList.remove('show');
-                };
+                const closeModal = () => { if (modal) modal.classList.remove('show'); };
+                if (modalClose) modalClose.addEventListener('click', closeModal);
+                if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+                document.addEventListener('keydown', (e) => { if (e.key === "Escape" && modal && modal.classList.contains('show')) closeModal(); });
 
-                if (modalClose) {
-                    modalClose.addEventListener('click', closeModal);
-                }
-                
-                if (modal) {
-                    modal.addEventListener('click', (e) => {
-                        if (e.target === modal) closeModal();
-                    });
-                }
-                
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === "Escape" && modal && modal.classList.contains('show')) closeModal();
-                });
+                function markTmdbAsSynced(tmdbId) { window.location.reload(); }
 
-                // Atualiza a UI para itens sincronizados por TMDB ID
-                function markTmdbAsSynced(tmdbId) {
-                    // Atualiza badges no modal e em day-view
-                    document.querySelectorAll(`.js-modal-item[data-tmdb-id="${tmdbId}"] .status-local`).forEach(badge => {
-                        badge.textContent = 'Local: Sincronizado';
-                        badge.classList.remove('status-local-pending');
-                        badge.classList.add('status-local-synced');
-                        const box = badge.closest('.js-modal-item');
-                        if (box) {
-                            box.classList.remove('local-pending');
-                            box.classList.add('local-synced');
-                        }
-                    });
-
-                    // Atualiza dataset.events em todas as células do calendário
-                    document.querySelectorAll('.calendar-day-cell.has-events').forEach(cell => {
-                        const events = parseEventsFromCell(cell);
-                        let changed = false;
-                        const updated = events.map(ev => {
-                            if ((ev.tmdb_id || '').toString() === tmdbId.toString()) {
-                                if (ev.local_status !== 'Sincronizado') {
-                                    ev.local_status = 'Sincronizado';
-                                    changed = true;
-                                }
-                            }
-                            return ev;
-                        });
-                        if (changed) {
-                            writeEventsToCell(cell, updated);
-                            // Atualiza flags para filtros
-                            const hasPending = updated.some(i => i.local_status === 'Pendente');
-                            const hasSynced = updated.some(i => i.local_status === 'Sincronizado');
-                            cell.dataset.filterPending = hasPending ? 'true' : 'false';
-                            cell.dataset.filterSynced = hasSynced ? 'true' : 'false';
-                        }
-                    });
-
-                    reapplyActiveFilter();
-                }
-
-                // Ações por item (modal e day view) — sempre chama tmdb.store para sincronizar a série
                 function attachActionHandlers(container) {
                     if (!container) return;
                     container.addEventListener('click', function(event) {
@@ -1585,47 +1593,74 @@
                             const tmdbId = itemContainer?.dataset.tmdbId;
                             const type = itemContainer?.dataset.type || 'tv';
                             if (!tmdbId) return;
-
                             syncButton.disabled = true;
                             const originalContent = syncButton.innerHTML;
                             syncButton.innerHTML = '<div class="loading-spinner"></div> Sincronizando...';
-
                             const formData = new FormData();
                             formData.append('_token', '{{ csrf_token() }}');
                             formData.append('type', type);
                             formData.append('tmdb_id', tmdbId);
-
-                            fetch("{{ route('admin.tmdb.store') }}", {
-                                method: 'POST',
-                                body: formData,
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                    'Accept': 'application/json'
-                                }
-                            })
+                            fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }})
                             .then(async (response) => {
                                 let body = {};
                                 try { body = await response.json(); } catch {}
                                 if (response.status === 200 || response.status === 208) {
+                                    alert(body.message || 'Sincronização concluída. A página será recarregada.');
                                     markTmdbAsSynced(tmdbId);
-                                    alert(body.message || 'Sincronização concluída.');
                                 } else {
                                     alert(body.message || 'Falha na sincronização.');
                                 }
                             })
                             .catch(() => alert('Erro de comunicação com o servidor.'))
-                            .finally(() => {
-                                syncButton.disabled = false;
-                                syncButton.innerHTML = originalContent;
+                            .finally(() => { if(!syncButton.closest('.modal-body')) { syncButton.disabled = false; syncButton.innerHTML = originalContent; }});
+                        }
+                    });
+                }
+                attachActionHandlers(modalBody);
+                attachActionHandlers(dayViewEl);
+
+                // Importação por linha (Filmes Recentes)
+                const recentMoviesContainer = document.getElementById('content-recent-movies');
+                if (recentMoviesContainer) {
+                    recentMoviesContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-recent-movie');
+                        if (!btn) return;
+                        const row = btn.closest('.recent-movie-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'movie');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                             });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
                         }
                     });
                 }
 
-                attachActionHandlers(modalBody);
-                attachActionHandlers(dayViewEl);
-
-                // Sincronização em massa (100% client-side usando tmdb.store por TMDB ID)
                 const syncButtons = document.querySelectorAll('[data-sync-type]');
                 const retryButton = document.getElementById('retry-sync-button');
                 const progressContainer = document.getElementById('sync-progress');
@@ -1635,60 +1670,39 @@
                 const updatedCountEl = document.getElementById('updated-count');
                 const skippedCountEl = document.getElementById('sync-skipped-count');
                 const failedCountEl = document.getElementById('sync-failed-count');
-
                 let lastSyncType = 'all';
                 let isBulkSyncRunning = false;
 
                 function gatherCalendarTmdbIds(syncType) {
-                    // syncType: 'all' | 'series' | 'anime'
                     const cells = document.querySelectorAll('.calendar-day-cell.has-events');
                     const idsSet = new Set();
-
                     cells.forEach(cell => {
                         const events = parseEventsFromCell(cell);
                         events.forEach(ev => {
-                            // Sincronizamos apenas itens com status da API "Atualizado"
-                            if ((ev.status || '') !== 'Atualizado') return;
-
-                            const t = parseInt(ev.type ?? 0, 10);
-                            if (syncType === 'series' && t !== 2) return;
-                            if (syncType === 'anime' && t !== 3) return;
-
-                            // Se já está localmente sincronizado, pode pular — o endpoint vai tratar como 208 também
+                            const t = ev.content_type || '';
+                            if (syncType === 'series' && t !== 'series') return;
+                            if (syncType === 'anime' && t !== 'anime') return;
+                            if (ev.local_status !== 'Pendente') return;
                             const tmdbId = ev.tmdb_id;
                             if (!tmdbId) return;
                             idsSet.add(String(tmdbId));
                         });
                     });
-
                     return Array.from(idsSet.values());
                 }
 
-                function showProgress() {
-                    if (progressContainer) {
-                        progressContainer.style.display = 'block';
-                        updateProgress(0, 0, 0, 0, 0, 0);
-                    }
+                function showProgress(container, bar, stats, created, updated, skipped, failed) {
+                    if (container) container.style.display = 'block';
+                    updateProgressUI(0, 0, bar, stats, created, updated, skipped, failed, 0, 0, 0, 0);
                 }
-
-                function hideProgress() {
-                    if (progressContainer) {
-                        progressContainer.style.display = 'none';
-                    }
-                }
-
-                function updateProgress(processed, total, created, updated, skipped, failed) {
-                    if (progressBar) {
-                        const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
-                        progressBar.style.width = pct + '%';
-                    }
-                    if (progressStats) {
-                        progressStats.textContent = `${processed}/${total} processados`;
-                    }
-                    if (createdCountEl) createdCountEl.textContent = created;
-                    if (updatedCountEl) updatedCountEl.textContent = updated;
-                    if (skippedCountEl) skippedCountEl.textContent = skipped;
-                    if (failedCountEl) failedCountEl.textContent = failed;
+                
+                function updateProgressUI(processed, total, bar, statsEl, createdEl, updatedEl, skippedEl, failedEl, created, updated, skipped, failed) {
+                    if (bar) bar.style.width = (total > 0 ? Math.round((processed / total) * 100) : 0) + '%';
+                    if (statsEl) statsEl.textContent = `${processed}/${total} processados`;
+                    if (createdEl) createdEl.textContent = created;
+                    if (updatedEl) updatedEl.textContent = updated;
+                    if (skippedEl) skippedEl.textContent = skipped;
+                    if (failedEl) failedEl.textContent = failed;
                 }
 
                 function toggleSyncButtons(enabled) {
@@ -1706,115 +1720,91 @@
 
                 async function runClientSideSync(syncType) {
                     if (isBulkSyncRunning) return;
-
                     isBulkSyncRunning = true;
                     lastSyncType = syncType;
                     toggleSyncButtons(false);
-                    showProgress();
-
+                    showProgress(progressContainer, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl);
                     const tmdbIds = gatherCalendarTmdbIds(syncType);
                     const total = tmdbIds.length;
-
                     if (total === 0) {
-                        updateProgress(0, 0, 0, 0, 0, 0);
-                        alert('Nenhum item "Atualizado" encontrado para este filtro.');
+                        alert('Nenhum item pendente encontrado para este filtro.');
                         toggleSyncButtons(true);
-                        hideProgress();
+                        progressContainer.style.display = 'none';
                         isBulkSyncRunning = false;
                         return;
                     }
-
                     let processed = 0, created = 0, updated = 0, skipped = 0, failed = 0;
-
+                    updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
                     for (const tmdbId of tmdbIds) {
                         const formData = new FormData();
                         formData.append('_token', '{{ csrf_token() }}');
                         formData.append('type', 'tv');
                         formData.append('tmdb_id', tmdbId);
-
                         try {
-                            const response = await fetch("{{ route('admin.tmdb.store') }}", {
-                                method: 'POST',
-                                body: formData,
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                    'Accept': 'application/json'
-                                }
-                            });
-
-                            let body = {};
-                            try { body = await response.json(); } catch {}
-
-                            if (response.status === 200) {
-                                // Decide created vs updated pela mensagem
-                                const msg = (body.message || '').toLowerCase();
-                                if (msg.includes('updated')) updated++;
-                                else created++;
-
-                                // Atualiza DOM para este tmdbId
-                                markTmdbAsSynced(tmdbId);
-                            } else if (response.status === 208) {
-                                skipped++;
-                                markTmdbAsSynced(tmdbId);
-                            } else {
-                                failed++;
-                            }
-                        } catch (e) {
-                            failed++;
-                        } finally {
+                            const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                            let body = {}; try { body = await response.json(); } catch {}
+                            if (response.status === 200) { if ((body.message || '').toLowerCase().includes('updated')) updated++; else created++; }
+                            else if (response.status === 208) { skipped++; }
+                            else { failed++; }
+                        } catch (e) { failed++; }
+                        finally {
                             processed++;
-                            updateProgress(processed, total, created, updated, skipped, failed);
+                            await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed); resolve(); }));
                         }
                     }
-
                     toggleSyncButtons(true);
                     isBulkSyncRunning = false;
-
-                    alert(`Sincronização concluída.\nCriados: ${created} | Atualizados: ${updated} | Ignorados: ${skipped} | Falhas: ${failed}`);
-                    // Opcional: recarregar para refletir tudo
-                    // setTimeout(() => window.location.reload(), 1500);
+                    alert(`Sincronização concluída.\nCriados: ${created} | Atualizados: ${updated} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                    window.location.reload();
                 }
-
-                syncButtons.forEach(button => {
-                    button.addEventListener('click', () => runClientSideSync(button.dataset.syncType));
-                });
-
-                if (retryButton) {
-                    retryButton.addEventListener('click', () => runClientSideSync(lastSyncType || 'all'));
-                }
-
-                // Bulk Import (existente)
-                document.querySelectorAll('.ajax-form').forEach(form => {
-                    form.addEventListener('submit', function(event) {
-                        event.preventDefault();
-                        const button = form.querySelector('button, input[type="submit"]');
-                        button.disabled = true;
-                        button.textContent = '...';
-                        const postdata = new FormData(form);
-                        const formurl = form.getAttribute('action');
-                        const dataId = form.getAttribute('data-id');
-                        fetch(formurl, {
-                            method: 'POST',
-                            body: postdata,
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                        })
-                        .then(response => {
-                            if (response.ok) {
-                                document.querySelector('.form' + dataId)?.remove();
-                            } else {
-                                alert('Erro ao importar.');
-                                button.disabled = false;
-                                button.textContent = 'Import';
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            button.disabled = false;
-                            button.textContent = 'Import';
-                        });
-                    });
-                });
+                syncButtons.forEach(button => button.addEventListener('click', () => runClientSideSync(button.dataset.syncType)));
+                if (retryButton) retryButton.addEventListener('click', () => runClientSideSync(lastSyncType || 'all'));
                 
+                const startRecentMoviesBtn = document.getElementById('start-recent-movies-import');
+                if (startRecentMoviesBtn) {
+                    startRecentMoviesBtn.addEventListener('click', async () => {
+                        const movieRows = document.querySelectorAll('#content-recent-movies .recent-movie-row');
+                        const ids = Array.from(movieRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhum filme novo para importar.'); return;
+                        }
+                        startRecentMoviesBtn.disabled = true;
+                        startRecentMoviesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('recent-movies-import-status');
+                        const pBar = document.getElementById('recent-movies-progress-bar');
+                        const pStats = document.getElementById('recent-movies-progress-stats');
+                        const pCreated = document.getElementById('recent-movies-created-count');
+                        const pSkipped = document.getElementById('recent-movies-skipped-count');
+                        const pFailed = document.getElementById('recent-movies-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'movie');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de filmes concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+
                 const startButton = document.getElementById('start-bulk-import');
                 const bulkImportForm = document.getElementById('bulk-import-form');
                 const bulkStatusDiv = document.getElementById('bulk-import-status');
@@ -1850,6 +1840,7 @@
                             jobElement.className = 'text-sm p-2 rounded-md bg-gray-50 dark:bg-gray-800';
                             jobElement.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold text-gray-800 dark:text-gray-200">ID: ${id}</span><span class="job-status font-bold text-blue-500">⚙ Processando...</span></div><p class="job-message text-xs text-gray-500 dark:text-gray-400 mt-1"></p>`;
                             document.getElementById('job-details').prepend(jobElement);
+                            const jobTitleSpan = jobElement.querySelector('.font-semibold');
                             const jobStatusSpan = jobElement.querySelector('.job-status');
                             const jobMessageP = jobElement.querySelector('.job-message');
                             const formData = new FormData();
@@ -1857,22 +1848,22 @@
                             formData.append('type', type);
                             formData.append('tmdb_id', id.trim());
                             try {
-                                const response = await fetch("{{ route('admin.tmdb.store') }}", {
-                                    method: 'POST',
-                                    body: formData,
-                                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-                                });
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }});
                                 const result = await response.json();
+                                const titleMatch = result.message.match(/'([^']*)'/);
+                                const titleText = titleMatch ? `${titleMatch[1]} (ID: ${id})` : `ID: ${id}`;
+                                jobTitleSpan.textContent = titleText;
+
                                 if (response.status === 200) {
                                     successCount++;
                                     jobStatusSpan.className = 'job-status font-bold text-green-500';
                                     jobStatusSpan.textContent = '✓ Sucesso';
-                                    jobMessageP.textContent = result.message;
+                                    jobMessageP.textContent = result.message.replace(/'([^']*)'/, 'item');
                                 } else if (response.status === 208) {
                                     skippedCount++;
                                     jobStatusSpan.className = 'job-status font-bold text-orange-500';
                                     jobStatusSpan.textContent = '✓ Ignorado';
-                                    jobMessageP.textContent = result.message;
+                                    jobMessageP.textContent = result.message.replace(/'([^']*)'/, 'item');
                                 } else {
                                     failedCount++;
                                     jobStatusSpan.className = 'job-status font-bold text-red-500';
