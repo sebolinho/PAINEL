@@ -646,6 +646,9 @@
                     <button id="tab-recent-series" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         Séries Recentes
                     </button>
+                    <button id="tab-first-import" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        Primeira Importação
+                    </button>
                 </nav>
             </div>
 
@@ -1238,6 +1241,155 @@
                         @endif
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div id="content-first-import" class="main-tab-content hidden">
+                <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Primeira Importação</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Importação completa de todos os filmes e séries da API, ordenados do mais antigo para o mais novo. 
+                                Ideal para configuração inicial do site.
+                            </p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="start-first-import-movies" class="sync-button">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Importar Todos os Filmes
+                            </button>
+                            <button id="start-first-import-series" class="sync-button series">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Importar Todas as Séries
+                            </button>
+                            <button id="start-first-import-all" class="sync-button anime">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Importar Tudo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="first-import-status" class="sync-progress mt-4">
+                        <div class="progress-header">
+                            <div class="progress-title">Primeira Importação...</div>
+                            <div class="progress-stats" id="first-import-progress-stats">0/0 processados</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="first-import-progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="text-green-400">Criados: <span id="first-import-created-count">0</span></span> |
+                            <span class="text-yellow-400">Ignorados: <span id="first-import-skipped-count">0</span></span> |
+                            <span class="text-red-400">Falhas: <span id="first-import-failed-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="">
+                    <div class="px-5 py-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Filmes Column -->
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    Filmes Disponíveis para Importação
+                                    @if(isset($firstImportMovies))
+                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportMovies) }} itens)</span>
+                                    @endif
+                                </h4>
+                                <div class="max-h-96 overflow-y-auto">
+                                    @if(isset($firstImportMovies) && count($firstImportMovies) > 0)
+                                        @foreach(array_slice($firstImportMovies, 0, 50) as $movie)
+                                            <div class="first-import-movie-row flex items-center space-x-4 p-3 border-b border-gray-100 dark:border-gray-800" data-tmdb-id="{{ $movie['id'] ?? '' }}">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-12 overflow-hidden relative flex-shrink-0">
+                                                    @if($movie['image'] ?? '')
+                                                        <img src="{{ $movie['image'] }}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                                        {{ $movie['title'] ?? 'Sem título' }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $movie['release_date'] ? date('Y', strtotime($movie['release_date'])) : '—' }}
+                                                        | ⭐ {{ number_format($movie['vote_average'] ?? 0, 1) }}
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="sync-single-button js-import-first-movie" title="Importar filme">
+                                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                        @if(count($firstImportMovies) > 50)
+                                            <div class="p-3 text-center text-sm text-gray-500">
+                                                E mais {{ count($firstImportMovies) - 50 }} filmes...
+                                            </div>
+                                        @endif
+                                    @elseif(isset($firstImportError))
+                                        <div class="text-center py-10">
+                                            <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar filmes</h5>
+                                            <p class="mt-1 text-sm text-red-500">{{ $firstImportError }}</p>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-10">
+                                           <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo</h5>
+                                           <p class="mt-1 text-sm text-gray-500">Todos os filmes já estão importados.</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Séries Column -->
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    Séries Disponíveis para Importação
+                                    @if(isset($firstImportSeries))
+                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportSeries) }} itens)</span>
+                                    @endif
+                                </h4>
+                                <div class="max-h-96 overflow-y-auto">
+                                    @if(isset($firstImportSeries) && count($firstImportSeries) > 0)
+                                        @foreach(array_slice($firstImportSeries, 0, 50) as $series)
+                                            <div class="first-import-series-row flex items-center space-x-4 p-3 border-b border-gray-100 dark:border-gray-800" data-tmdb-id="{{ $series['id'] ?? '' }}">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-12 overflow-hidden relative flex-shrink-0">
+                                                    @if($series['image'] ?? '')
+                                                        <img src="{{ $series['image'] }}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                                        {{ $series['title'] ?? 'Sem título' }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $series['release_date'] ? date('Y', strtotime($series['release_date'])) : '—' }}
+                                                        | ⭐ {{ number_format($series['vote_average'] ?? 0, 1) }}
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="sync-single-button js-import-first-series" title="Importar série">
+                                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                        @if(count($firstImportSeries) > 50)
+                                            <div class="p-3 text-center text-sm text-gray-500">
+                                                E mais {{ count($firstImportSeries) - 50 }} séries...
+                                            </div>
+                                        @endif
+                                    @elseif(isset($firstImportError))
+                                        <div class="text-center py-10">
+                                            <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar séries</h5>
+                                            <p class="mt-1 text-sm text-red-500">{{ $firstImportError }}</p>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-10">
+                                           <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhuma série nova</h5>
+                                           <p class="mt-1 text-sm text-gray-500">Todas as séries já estão importadas.</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2005,6 +2157,233 @@
                         }
 
                         alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // First Import functionality
+                const firstImportContainer = document.getElementById('content-first-import');
+                if (firstImportContainer) {
+                    // Individual movie import
+                    firstImportContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-first-movie');
+                        if (!btn) return;
+                        const row = btn.closest('.first-import-movie-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div>';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'movie');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    });
+
+                    // Individual series import
+                    firstImportContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-first-series');
+                        if (!btn) return;
+                        const row = btn.closest('.first-import-series-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div>';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'tv');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    });
+                }
+
+                // Bulk import for first import - Movies
+                const startFirstImportMoviesBtn = document.getElementById('start-first-import-movies');
+                if (startFirstImportMoviesBtn) {
+                    startFirstImportMoviesBtn.addEventListener('click', async () => {
+                        const movieRows = document.querySelectorAll('#content-first-import .first-import-movie-row');
+                        const ids = Array.from(movieRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhum filme disponível para importação.'); return;
+                        }
+                        if (!confirm(`Deseja importar ${ids.length} filmes? Esta operação pode demorar.`)) return;
+                        
+                        startFirstImportMoviesBtn.disabled = true;
+                        startFirstImportMoviesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('first-import-status');
+                        const pBar = document.getElementById('first-import-progress-bar');
+                        const pStats = document.getElementById('first-import-progress-stats');
+                        const pCreated = document.getElementById('first-import-created-count');
+                        const pSkipped = document.getElementById('first-import-skipped-count');
+                        const pFailed = document.getElementById('first-import-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'movie');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de filmes concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // Bulk import for first import - Series
+                const startFirstImportSeriesBtn = document.getElementById('start-first-import-series');
+                if (startFirstImportSeriesBtn) {
+                    startFirstImportSeriesBtn.addEventListener('click', async () => {
+                        const seriesRows = document.querySelectorAll('#content-first-import .first-import-series-row');
+                        const ids = Array.from(seriesRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhuma série disponível para importação.'); return;
+                        }
+                        if (!confirm(`Deseja importar ${ids.length} séries? Esta operação pode demorar.`)) return;
+                        
+                        startFirstImportSeriesBtn.disabled = true;
+                        startFirstImportSeriesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('first-import-status');
+                        const pBar = document.getElementById('first-import-progress-bar');
+                        const pStats = document.getElementById('first-import-progress-stats');
+                        const pCreated = document.getElementById('first-import-created-count');
+                        const pSkipped = document.getElementById('first-import-skipped-count');
+                        const pFailed = document.getElementById('first-import-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'tv');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // Bulk import for first import - All (Movies + Series)
+                const startFirstImportAllBtn = document.getElementById('start-first-import-all');
+                if (startFirstImportAllBtn) {
+                    startFirstImportAllBtn.addEventListener('click', async () => {
+                        const movieRows = document.querySelectorAll('#content-first-import .first-import-movie-row');
+                        const seriesRows = document.querySelectorAll('#content-first-import .first-import-series-row');
+                        const movieIds = Array.from(movieRows).map(row => ({id: row.dataset.tmdbId, type: 'movie'})).filter(item => item.id);
+                        const seriesIds = Array.from(seriesRows).map(row => ({id: row.dataset.tmdbId, type: 'tv'})).filter(item => item.id);
+                        const allIds = [...movieIds, ...seriesIds];
+                        
+                        if (allIds.length === 0) {
+                            alert('Nenhum conteúdo disponível para importação.'); return;
+                        }
+                        if (!confirm(`Deseja importar ${movieIds.length} filmes e ${seriesIds.length} séries (${allIds.length} itens total)? Esta operação pode demorar muito.`)) return;
+                        
+                        startFirstImportAllBtn.disabled = true;
+                        startFirstImportAllBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('first-import-status');
+                        const pBar = document.getElementById('first-import-progress-bar');
+                        const pStats = document.getElementById('first-import-progress-stats');
+                        const pCreated = document.getElementById('first-import-created-count');
+                        const pSkipped = document.getElementById('first-import-skipped-count');
+                        const pFailed = document.getElementById('first-import-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = allIds.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const item of allIds) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', item.type);
+                            formData.append('tmdb_id', item.id);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Primeira importação concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
                         window.location.reload();
                     });
                 }
