@@ -35,12 +35,14 @@ class TmdbController extends Controller
         $calendarData = $this->getEnrichedCalendarData();
         $recentMoviesData = $this->getRecentMoviesData();
         $recentSeriesData = $this->getRecentSeriesData();
+        $firstImportData = $this->getFirstImportData();
 
         return view('admin.tmdb.show', array_merge(
             compact('config', 'request'),
             $calendarData,
             $recentMoviesData,
-            $recentSeriesData
+            $recentSeriesData,
+            $firstImportData
         ));
     }
     
@@ -124,12 +126,14 @@ class TmdbController extends Controller
         $calendarData = $this->getEnrichedCalendarData();
         $recentMoviesData = $this->getRecentMoviesData();
         $recentSeriesData = $this->getRecentSeriesData();
+        $firstImportData = $this->getFirstImportData();
 
         return view('admin.tmdb.show', array_merge(
             compact('config', 'request', 'listings', 'result'),
             $calendarData,
             $recentMoviesData,
-            $recentSeriesData
+            $recentSeriesData,
+            $firstImportData
         ));
     }
     
@@ -379,6 +383,134 @@ class TmdbController extends Controller
         }
 
         return compact('recentSeries', 'recentSeriesError');
+    }
+
+    /**
+     * Busca TODOS os dados de filmes e séries para primeira importação, ordenados do mais antigo para o mais novo.
+     *
+     * @return array
+     */
+    private function getFirstImportData(): array
+    {
+        $firstImportMovies = [];
+        $firstImportSeries = [];
+        $firstImportError = null;
+
+        try {
+            // Buscar filmes
+            $movieResponse = Http::timeout(30)->get('https://superflixapi.asia/lista?category=movie&type=tmdb&format=json');
+            if ($movieResponse->successful()) {
+                $movieIds = $movieResponse->json();
+                if (is_array($movieIds)) {
+                    $tmdbMovieIds = collect($movieIds)
+                        ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                        ->filter(fn($id) => is_numeric($id))
+                        ->map(fn($id) => (int)$id);
+
+                    // Para primeira importação, pegar TODOS os IDs ordenados do mais antigo para o mais novo
+                    $allMovieIds = $tmdbMovieIds->values()->all();
+
+                    if (!empty($allMovieIds)) {
+                        $existingMovieIds = Post::where('type', 'movie')
+                            ->whereIn('tmdb_id', $allMovieIds)
+                            ->pluck('tmdb_id')
+                            ->all();
+                            
+                        $newMovieIds = array_values(array_diff($allMovieIds, $existingMovieIds));
+
+                        foreach ($newMovieIds as $id) {
+                            $details = Cache::remember('tmdb_movie_details_' . $id, 1440, function () use ($id) {
+                                try {
+                                    return $this->tmdbApiTrait('movie', $id);
+                                } catch (\Throwable $e) {
+                                    Log::warning("Falha ao buscar detalhes do TMDB para filme {$id}: " . $e->getMessage());
+                                    return null;
+                                }
+                            });
+
+                            if (!$details || empty($details['title'])) {
+                                Log::warning("Filme para primeira importação com TMDB ID {$id} foi ignorado por falta de detalhes (ex: título).");
+                                continue;
+                            }
+
+                            $image = $details['image'] ?? null;
+                            if (!$image && !empty($details['poster'])) {
+                                $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
+                            }
+
+                            $firstImportMovies[] = [
+                                'id' => (int)($details['tmdb_id'] ?? $id),
+                                'title' => $details['title'] ?? 'Sem título',
+                                'overview' => $details['overview'] ?? '',
+                                'release_date' => $details['release_date'] ?? '',
+                                'vote_average' => $details['vote_average'] ?? 0,
+                                'image' => $image ?: '',
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Buscar séries
+            $seriesResponse = Http::timeout(30)->get('https://superflixapi.asia/lista?category=serie&type=tmdb&format=json');
+            if ($seriesResponse->successful()) {
+                $seriesIds = $seriesResponse->json();
+                if (is_array($seriesIds)) {
+                    $tmdbSeriesIds = collect($seriesIds)
+                        ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                        ->filter(fn($id) => is_numeric($id))
+                        ->map(fn($id) => (int)$id);
+
+                    // Para primeira importação, pegar TODOS os IDs ordenados do mais antigo para o mais novo
+                    $allSeriesIds = $tmdbSeriesIds->values()->all();
+
+                    if (!empty($allSeriesIds)) {
+                        $existingSeriesIds = Post::where('type', 'tv')
+                            ->whereIn('tmdb_id', $allSeriesIds)
+                            ->pluck('tmdb_id')
+                            ->all();
+                            
+                        $newSeriesIds = array_values(array_diff($allSeriesIds, $existingSeriesIds));
+
+                        foreach ($newSeriesIds as $id) {
+                            $details = Cache::remember('tmdb_series_details_' . $id, 1440, function () use ($id) {
+                                try {
+                                    return $this->tmdbApiTrait('tv', $id);
+                                } catch (\Throwable $e) {
+                                    Log::warning("Falha ao buscar detalhes do TMDB para série {$id}: " . $e->getMessage());
+                                    return null;
+                                }
+                            });
+
+                            if (!$details || empty($details['title'])) {
+                                Log::warning("Série para primeira importação com TMDB ID {$id} foi ignorada por falta de detalhes (ex: título).");
+                                continue;
+                            }
+
+                            $image = $details['image'] ?? null;
+                            if (!$image && !empty($details['poster'])) {
+                                $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
+                            }
+
+                            $firstImportSeries[] = [
+                                'id' => (int)($details['tmdb_id'] ?? $id),
+                                'title' => $details['title'] ?? 'Sem título',
+                                'overview' => $details['overview'] ?? '',
+                                'release_date' => $details['release_date'] ?? '',
+                                'vote_average' => $details['vote_average'] ?? 0,
+                                'image' => $image ?: '',
+                            ];
+                        }
+                    }
+                }
+            }
+
+        } catch (\Exception $e) {
+            $firstImportError = $e->getMessage();
+            Log::error("Erro ao buscar dados para primeira importação: " . $firstImportError);
+        }
+
+        return compact('firstImportMovies', 'firstImportSeries', 'firstImportError');
     }
 
     public function settings(Request $request)
