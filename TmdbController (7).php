@@ -19,6 +19,9 @@ class TmdbController extends Controller
 {
     use PostTrait;
 
+    /**
+     * Exibe a página principal da ferramenta TMDB, incluindo o calendário e filmes recentes.
+     */
     public function show(Request $request)
     {
         $config = [
@@ -29,79 +32,19 @@ class TmdbController extends Controller
             return redirect()->route('admin.tmdb.settings');
         }
 
-        // Calendário
-        $calendarByMonth = collect();
-        $calendarError = null;
-        $calendarStats = ['total' => 0, 'series' => 0, 'animes' => 0, 'synchronized' => 0, 'pending' => 0];
+        $calendarData = $this->getEnrichedCalendarData();
+        $recentMoviesData = $this->getRecentMoviesData();
 
-        try {
-            $response = Http::timeout(30)->get('https://superflixapi.shop/calendario.php');
-
-            if ($response->successful()) {
-                $rawCalendarData = $response->json();
-                if (is_array($rawCalendarData)) {
-                    $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->all();
-
-                    // Episódios locais existentes (para marcar status local no calendário)
-                    $localEpisodes = PostEpisode::query()
-                        ->join('posts', 'post_episodes.post_id', '=', 'posts.id')
-                        ->whereIn('posts.tmdb_id', $tmdbIds)
-                        ->where('posts.type', 'tv')
-                        ->get(['posts.tmdb_id', 'post_episodes.season_number', 'post_episodes.episode_number'])
-                        ->keyBy(fn($item) => $item->tmdb_id . '-' . $item->season_number . '-' . $item->episode_number);
-
-                    $enrichedCalendarData = array_map(function ($item) use ($localEpisodes, &$calendarStats) {
-                        $seasonNumber = $item['season'] ?? $item['season_number'] ?? null;
-                        $episodeNumber = $item['number'] ?? $item['episode_number'] ?? null;
-                        $tmdbId = $item['tmdb_id'] ?? null;
-                        $key = $tmdbId . '-' . $seasonNumber . '-' . $episodeNumber;
-                        
-                        $isLocal = ($tmdbId && $localEpisodes->has($key));
-                        $item['local_status'] = $isLocal ? 'Sincronizado' : 'Pendente';
-                        
-                        // Tipos: series=2, anime=3
-                        $type = (int)($item['type'] ?? 0);
-                        $isAnime = ($type === 3);
-                        $isSeries = ($type === 2);
-                        
-                        $item['content_type'] = $isAnime ? 'anime' : ($isSeries ? 'series' : 'other');
-                        
-                        // Estatísticas
-                        $calendarStats['total']++;
-                        if ($isAnime) {
-                            $calendarStats['animes']++;
-                        }
-                        if ($isSeries) {
-                            $calendarStats['series']++;
-                        }
-                        if ($isLocal) {
-                            $calendarStats['synchronized']++;
-                        } else {
-                            $calendarStats['pending']++;
-                        }
-                        
-                        return $item;
-                    }, $rawCalendarData);
-
-                    // Agrupa por mês
-                    $calendarByMonth = collect($enrichedCalendarData)
-                        ->groupBy(fn($item) => Carbon::parse($item['air_date'])->format('Y-m'))
-                        ->sortKeys();
-
-                } else {
-                    $calendarError = 'A API do calendário retornou dados em um formato inesperado.';
-                }
-            } else {
-                $calendarError = 'Falha ao buscar dados do calendário. Código: ' . $response->status();
-            }
-        } catch (\Exception $e) {
-            $calendarError = 'Erro ao conectar com a API do calendário: ' . $e->getMessage();
-            Log::error($calendarError);
-        }
-
-        return view('admin.tmdb.show', compact('config', 'request', 'calendarByMonth', 'calendarError', 'calendarStats'));
+        return view('admin.tmdb.show', array_merge(
+            compact('config', 'request'),
+            $calendarData,
+            $recentMoviesData
+        ));
     }
-
+    
+    /**
+     * Busca dados no TMDB e exibe os resultados junto com o calendário e filmes recentes.
+     */
     public function fetch(Request $request)
     {
         $request->validate([
@@ -176,63 +119,185 @@ class TmdbController extends Controller
             $result = $apiResult;
         }
         
-        // Carregar calendário também nesta página
+        $calendarData = $this->getEnrichedCalendarData();
+        $recentMoviesData = $this->getRecentMoviesData();
+
+        return view('admin.tmdb.show', array_merge(
+            compact('config', 'request', 'listings', 'result'),
+            $calendarData,
+            $recentMoviesData
+        ));
+    }
+    
+    /**
+     * Busca dados do calendário, enriquece com o status de sincronização real e formata para a view.
+     *
+     * @return array
+     */
+    private function getEnrichedCalendarData(): array
+    {
         $calendarByMonth = collect();
         $calendarError = null;
         $calendarStats = ['total' => 0, 'series' => 0, 'animes' => 0, 'synchronized' => 0, 'pending' => 0];
-        
+
         try {
             $response = Http::timeout(30)->get('https://superflixapi.shop/calendario.php');
-            if ($response->successful()) {
-                $rawCalendarData = $response->json();
-                if (is_array($rawCalendarData)) {
-                    $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->all();
-                    $localEpisodes = PostEpisode::query()
-                        ->join('posts', 'post_episodes.post_id', '=', 'posts.id')
-                        ->whereIn('posts.tmdb_id', $tmdbIds)
-                        ->where('posts.type', 'tv')
-                        ->get(['posts.tmdb_id', 'post_episodes.season_number', 'post_episodes.episode_number'])
-                        ->keyBy(fn($item) => $item->tmdb_id . '-' . $item->season_number . '-' . $item->episode_number);
 
-                    $enrichedCalendarData = array_map(function ($item) use ($localEpisodes, &$calendarStats) {
-                        $seasonNumber = $item['season'] ?? $item['season_number'] ?? null;
-                        $episodeNumber = $item['number'] ?? $item['episode_number'] ?? null;
-                        $tmdbId = $item['tmdb_id'] ?? null;
-                        $key = $tmdbId . '-' . $seasonNumber . '-' . $episodeNumber;
-                        
-                        $isLocal = ($tmdbId && $localEpisodes->has($key));
-                        $item['local_status'] = $isLocal ? 'Sincronizado' : 'Pendente';
-                        
-                        $type = (int)($item['type'] ?? 0);
-                        $isAnime = ($type === 3);
-                        $isSeries = ($type === 2);
-                        
-                        $item['content_type'] = $isAnime ? 'anime' : ($isSeries ? 'series' : 'other');
-                        
-                        $calendarStats['total']++;
-                        if ($isAnime) $calendarStats['animes']++;
-                        if ($isSeries) $calendarStats['series']++;
-                        if ($isLocal) $calendarStats['synchronized']++;
-                        else $calendarStats['pending']++;
-                        
-                        return $item;
-                    }, $rawCalendarData);
-
-                    $calendarByMonth = collect($enrichedCalendarData)
-                        ->groupBy(fn($item) => Carbon::parse($item['air_date'])->format('Y-m'))
-                        ->sortKeys();
-                } else {
-                    $calendarError = 'A API do calendário retornou dados em um formato inesperado.';
-                }
-            } else {
-                $calendarError = 'Falha ao buscar dados do calendário. Código: ' . $response->status();
+            if (!$response->successful()) {
+                throw new \Exception('Falha ao buscar dados do calendário. Código: ' . $response->status());
             }
+
+            $rawCalendarData = $response->json();
+            if (!is_array($rawCalendarData)) {
+                throw new \Exception('A API do calendário retornou dados em um formato inesperado.');
+            }
+
+            $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->values()->all();
+
+            $localCounts = Post::whereIn('tmdb_id', $tmdbIds)
+                ->where('type', 'tv')
+                ->withCount('episodes')
+                ->get()
+                ->pluck('episodes_count', 'tmdb_id');
+
+            $apiCounts = [];
+            foreach ($tmdbIds as $id) {
+                $apiCounts[$id] = Cache::remember('tmdb_total_episodes_' . $id, 60, function () use ($id) {
+                    try {
+                        $seriesData = $this->tmdbApiTrait('tv', $id);
+                        $count = 0;
+                        if (!empty($seriesData['seasons'])) {
+                            foreach ($seriesData['seasons'] as $season) {
+                                $episodes = json_decode($season['episode'], true) ?? [];
+                                $count += count($episodes);
+                            }
+                        }
+                        return $count;
+                    } catch (\Exception $e) {
+                        Log::error("Falha ao buscar contagem de episódios para TMDB ID {$id}: " . $e->getMessage());
+                        return 0;
+                    }
+                });
+            }
+
+            $enrichedCalendarData = array_map(function ($item) use ($localCounts, $apiCounts, &$calendarStats) {
+                $tmdbId = $item['tmdb_id'] ?? null;
+                $isSynced = false;
+
+                if ($tmdbId) {
+                    $local = $localCounts->get($tmdbId, 0);
+                    $api = $apiCounts[$tmdbId] ?? 0;
+                    
+                    $isSynced = ($api > 0) && ($local >= $api);
+
+                    $item['local_episode_count'] = $local;
+                    $item['api_episode_count'] = $api;
+                }
+                
+                $item['local_status'] = $isSynced ? 'Sincronizado' : 'Pendente';
+                
+                $type = (int)($item['type'] ?? 0);
+                $isAnime = ($type === 3);
+                $isSeries = ($type === 2);
+                
+                $item['content_type'] = $isAnime ? 'anime' : ($isSeries ? 'series' : 'other');
+                
+                $calendarStats['total']++;
+                if ($isAnime) $calendarStats['animes']++;
+                if ($isSeries) $calendarStats['series']++;
+                if ($isSynced) $calendarStats['synchronized']++;
+                else $calendarStats['pending']++;
+                
+                return $item;
+            }, $rawCalendarData);
+
+            $calendarByMonth = collect($enrichedCalendarData)
+                ->groupBy(fn($item) => Carbon::parse($item['air_date'])->format('Y-m'))
+                ->sortKeys();
+
         } catch (\Exception $e) {
-            $calendarError = 'Erro ao conectar com a API do calendário: ' . $e->getMessage();
+            $calendarError = 'Erro ao processar dados do calendário: ' . $e->getMessage();
             Log::error($calendarError);
         }
 
-        return view('admin.tmdb.show', compact('config', 'request', 'listings', 'result', 'calendarByMonth', 'calendarError', 'calendarStats'));
+        return compact('calendarByMonth', 'calendarError', 'calendarStats');
+    }
+
+    /**
+     * Busca dados de filmes recentes de uma API externa.
+     *
+     * @return array
+     */
+    private function getRecentMoviesData(): array
+    {
+        $recentMovies = [];
+        $recentMoviesError = null;
+
+        try {
+            $response = Http::timeout(30)->get('https://superflixapi.asia/lista?category=movie&type=tmdb&format=json');
+            if (!$response->successful()) {
+                throw new \Exception('Falha ao buscar a lista de filmes recentes. Código: ' . $response->status());
+            }
+            
+            $ids = $response->json();
+            if (!is_array($ids)) {
+                throw new \Exception('A API de filmes recentes retornou dados em um formato inesperado (não é um JSON array).');
+            }
+
+            $tmdbIds = collect($ids)
+                ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                ->filter(fn($id) => is_numeric($id))
+                ->map(fn($id) => (int)$id);
+
+            $latestTmdbIds = $tmdbIds->take(-100)->values()->all();
+
+            if (empty($latestTmdbIds)) {
+                return compact('recentMovies', 'recentMoviesError');
+            }
+            
+            $existingMovieIds = Post::where('type', 'movie')
+                ->whereIn('tmdb_id', $latestTmdbIds)
+                ->pluck('tmdb_id')
+                ->all();
+                
+            $newMovieIds = array_values(array_diff($latestTmdbIds, $existingMovieIds));
+
+            foreach ($newMovieIds as $id) {
+                // Buscar e montar dados consistentes para a view
+                $details = Cache::remember('tmdb_movie_details_' . $id, 1440, function () use ($id) {
+                    try {
+                        return $this->tmdbApiTrait('movie', $id);
+                    } catch (\Throwable $e) {
+                        Log::warning("Falha ao buscar detalhes do TMDB para filme {$id}: " . $e->getMessage());
+                        return null;
+                    }
+                });
+
+                if (!$details || empty($details['title'])) {
+                    Log::warning("Filme recente com TMDB ID {$id} foi ignorado por falta de detalhes (ex: título).");
+                    continue;
+                }
+
+                $image = $details['image'] ?? null;
+                if (!$image && !empty($details['poster'])) {
+                    $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
+                }
+
+                $recentMovies[] = [
+                    'id' => (int)($details['tmdb_id'] ?? $id),
+                    'title' => $details['title'] ?? 'Sem título',
+                    'overview' => $details['overview'] ?? '',
+                    'release_date' => $details['release_date'] ?? '',
+                    'vote_average' => $details['vote_average'] ?? 0,
+                    'image' => $image ?: '',
+                ];
+            }
+        } catch (\Exception $e) {
+            $recentMoviesError = $e->getMessage();
+            Log::error("Erro ao buscar filmes recentes: " . $recentMoviesError);
+        }
+
+        return compact('recentMovies', 'recentMoviesError');
     }
 
     public function settings(Request $request)
@@ -288,17 +353,21 @@ class TmdbController extends Controller
             $isUpdate = false;
             if ($existingPost) {
                 if ($request->type === 'movie') {
-                    return response()->json(['message' => 'Filme já existe, ignorado.'], 208);
+                    return response()->json(['message' => "Filme '{$postArray['title']}' já existe, ignorado."], 208);
                 }
                 
                 $isUpdate = true;
-                $apiSeasonCount = count($postArray['seasons'] ?? []);
-                $dbSeasonCount = $existingPost->seasons()->count();
-                $apiEpisodeCount = array_sum(array_map(fn($s) => count(json_decode($s['episode'], true) ?? []), $postArray['seasons'] ?? []));
+                $apiEpisodeCount = 0;
+                if (!empty($postArray['seasons'])) {
+                    foreach ($postArray['seasons'] as $season) {
+                        $episodes = json_decode($season['episode'], true) ?? [];
+                        $apiEpisodeCount += count($episodes);
+                    }
+                }
                 $dbEpisodeCount = $existingPost->episodes()->count();
 
-                if ($apiSeasonCount <= $dbSeasonCount && $apiEpisodeCount <= $dbEpisodeCount) {
-                    return response()->json(['message' => 'Série já está atualizada, ignorada.'], 208);
+                if ($apiEpisodeCount > 0 && $dbEpisodeCount >= $apiEpisodeCount) {
+                    return response()->json(['message' => "Série '{$postArray['title']}' já está atualizada, ignorada."], 208);
                 }
                 
                 $model = $existingPost;
@@ -396,7 +465,7 @@ class TmdbController extends Controller
                 }
             });
 
-            $message = $isUpdate ? __(':title updated', ['title' => $postArray['title']]) : __(':title created', ['title' => $postArray['title']]);
+            $message = $isUpdate ? __(':title updated', ['title' => "'{$postArray['title']}'"]) : __(':title created', ['title' => "'{$postArray['title']}'"]);
             return response()->json(['message' => $message], 200);
 
         } catch (\Exception $e) {
@@ -446,5 +515,102 @@ class TmdbController extends Controller
     {
         $postArray = $this->tmdbEpisodeApiTrait($request);
         return response()->json($postArray);
+    }
+    
+    /**
+     * Método para ser chamado via CRON Job para sincronizar todos os itens pendentes do calendário.
+     */
+    public function cronSyncAllPending($key)
+    {
+        $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
+        if ($key !== $secretKey) {
+            return response('Acesso não autorizado.', 403);
+        }
+
+        set_time_limit(3600); 
+
+        $calendarData = $this->getEnrichedCalendarData();
+        $items = $calendarData['calendarByMonth']->flatten(1);
+        
+        $pendingItems = $items->filter(fn($item) => ($item['local_status'] ?? 'Pendente') === 'Pendente')->unique('tmdb_id');
+
+        if ($pendingItems->isEmpty()) {
+            return response('Nenhum item pendente para sincronizar.');
+        }
+        
+        $created = 0; $updated = 0; $failed = 0; $skipped = 0;
+
+        foreach ($pendingItems as $item) {
+            try {
+                $request = new Request(['tmdb_id' => $item['tmdb_id'], 'type' => 'tv']);
+                $response = $this->store($request);
+                $status = $response->getStatusCode();
+
+                if ($status === 200) {
+                    if (str_contains(optional($response->getData())->message, 'updated')) $updated++; else $created++;
+                } elseif ($status === 208) {
+                    $skipped++;
+                } else {
+                    $failed++;
+                }
+            } catch (\Exception $e) {
+                Log::error("CRON Sync (Calendário) Falhou para TMDB ID {$item['tmdb_id']}: " . $e->getMessage());
+                $failed++;
+            }
+        }
+        
+        $summary = "Sincronização (Calendário) via CRON concluída. Criados: {$created}, Atualizados: {$updated}, Ignorados: {$skipped}, Falhas: {$failed}.";
+        Log::info($summary);
+        
+        return response($summary);
+    }
+
+    /**
+     * Método para ser chamado via CRON Job para sincronizar os filmes recentes.
+     */
+    public function cronSyncRecentMovies($key)
+    {
+        $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
+        if ($key !== $secretKey) {
+            return response('Acesso não autorizado.', 403);
+        }
+
+        set_time_limit(3600);
+
+        try {
+            $recentMoviesData = $this->getRecentMoviesData();
+            $newMovieIds = collect($recentMoviesData['recentMovies'])->pluck('id')->all();
+
+            if (empty($newMovieIds)) {
+                return response('Nenhum filme novo para sincronizar.');
+            }
+
+            $created = 0; $failed = 0; $skipped = 0;
+
+            foreach ($newMovieIds as $tmdbId) {
+                try {
+                    $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'movie']);
+                    $storeResponse = $this->store($request);
+                    $status = $storeResponse->getStatusCode();
+
+                    if ($status === 200) $created++;
+                    elseif ($status === 208) $skipped++;
+                    else $failed++;
+                } catch (\Exception $e) {
+                    Log::error("CRON Sync (Filmes) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
+                    $failed++;
+                }
+            }
+            
+            $summary = "Sincronização de filmes via CRON concluída. Criados: {$created}, Ignorados: {$skipped}, Falhas: {$failed}.";
+            Log::info($summary);
+            
+            return response($summary);
+
+        } catch (\Exception $e) {
+            $errorMsg = "Erro no CRON de filmes recentes: " . $e->getMessage();
+            Log::error($errorMsg);
+            return response($errorMsg, 500);
+        }
     }
 }
