@@ -30,6 +30,7 @@ if (config('settings.landing') == 'active') {
 // Rotas para Cron Jobs de Sincronização
 Route::get('/cron/sync-all-pending/{key}', [TmdbController::class, 'cronSyncAllPending'])->name('cron.sync.all');
 Route::get('/cron/sync-recent-movies/{key}', [TmdbController::class, 'cronSyncRecentMovies'])->name('cron.sync.movies');
+Route::get('/cron/sync-recent-series/{key}', [TmdbController::class, 'cronSyncRecentSeries'])->name('cron.sync.series');
 
 
 // Navegar
