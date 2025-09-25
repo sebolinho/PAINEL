@@ -419,32 +419,15 @@ class TmdbController extends Controller
                         $newMovieIds = array_values(array_diff($allMovieIds, $existingMovieIds));
 
                         foreach ($newMovieIds as $id) {
-                            $details = Cache::remember('tmdb_movie_details_' . $id, 1440, function () use ($id) {
-                                try {
-                                    return $this->tmdbApiTrait('movie', $id);
-                                } catch (\Throwable $e) {
-                                    Log::warning("Falha ao buscar detalhes do TMDB para filme {$id}: " . $e->getMessage());
-                                    return null;
-                                }
-                            });
-
-                            if (!$details || empty($details['title'])) {
-                                Log::warning("Filme para primeira importação com TMDB ID {$id} foi ignorado por falta de detalhes (ex: título).");
-                                continue;
-                            }
-
-                            $image = $details['image'] ?? null;
-                            if (!$image && !empty($details['poster'])) {
-                                $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
-                            }
-
+                            // Para evitar timeout do Cloudflare na primeira carga da página,
+                            // não fazemos chamadas à API TMDB aqui. Apenas retornamos os IDs.
                             $firstImportMovies[] = [
-                                'id' => (int)($details['tmdb_id'] ?? $id),
-                                'title' => $details['title'] ?? 'Sem título',
-                                'overview' => $details['overview'] ?? '',
-                                'release_date' => $details['release_date'] ?? '',
-                                'vote_average' => $details['vote_average'] ?? 0,
-                                'image' => $image ?: '',
+                                'id' => (int)$id,
+                                'title' => 'ID: ' . $id, // Título temporário apenas com o ID
+                                'overview' => '',
+                                'release_date' => '',
+                                'vote_average' => 0,
+                                'image' => '',
                             ];
                         }
                     }
@@ -473,32 +456,15 @@ class TmdbController extends Controller
                         $newSeriesIds = array_values(array_diff($allSeriesIds, $existingSeriesIds));
 
                         foreach ($newSeriesIds as $id) {
-                            $details = Cache::remember('tmdb_series_details_' . $id, 1440, function () use ($id) {
-                                try {
-                                    return $this->tmdbApiTrait('tv', $id);
-                                } catch (\Throwable $e) {
-                                    Log::warning("Falha ao buscar detalhes do TMDB para série {$id}: " . $e->getMessage());
-                                    return null;
-                                }
-                            });
-
-                            if (!$details || empty($details['title'])) {
-                                Log::warning("Série para primeira importação com TMDB ID {$id} foi ignorada por falta de detalhes (ex: título).");
-                                continue;
-                            }
-
-                            $image = $details['image'] ?? null;
-                            if (!$image && !empty($details['poster'])) {
-                                $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
-                            }
-
+                            // Para evitar timeout do Cloudflare na primeira carga da página,
+                            // não fazemos chamadas à API TMDB aqui. Apenas retornamos os IDs.
                             $firstImportSeries[] = [
-                                'id' => (int)($details['tmdb_id'] ?? $id),
-                                'title' => $details['title'] ?? 'Sem título',
-                                'overview' => $details['overview'] ?? '',
-                                'release_date' => $details['release_date'] ?? '',
-                                'vote_average' => $details['vote_average'] ?? 0,
-                                'image' => $image ?: '',
+                                'id' => (int)$id,
+                                'title' => 'ID: ' . $id, // Título temporário apenas com o ID
+                                'overview' => '',
+                                'release_date' => '',
+                                'vote_average' => 0,
+                                'image' => '',
                             ];
                         }
                     }
