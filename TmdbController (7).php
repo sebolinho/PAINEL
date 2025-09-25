@@ -71,6 +71,22 @@ class TmdbController extends Controller
     }
 
     /**
+     * Faz uma requisição HTTP para TMDB API com timeout melhorado.
+     *
+     * @param string $url
+     * @param array $params
+     * @return \Illuminate\Http\Client\Response
+     */
+    private function makeTmdbApiRequest($url, $params = [])
+    {
+        return Http::timeout(45)
+            ->withHeaders([
+                'Accept' => 'application/json'
+            ])
+            ->get($url, $params);
+    }
+
+    /**
      * Exibe a página principal da ferramenta TMDB, incluindo o calendário e filmes recentes.
      */
     public function show(Request $request)
@@ -133,7 +149,7 @@ class TmdbController extends Controller
                 if (preg_match('/^tt\d+$/', $q)) {
                     $apiUrl = 'https://api.themoviedb.org/3/find/' . $q;
                     $apiParams = ['api_key' => config('settings.tmdb_api'), 'language' => config('settings.tmdb_language'), 'external_source' => 'imdb_id'];
-                    $response = Http::get($apiUrl, $apiParams);
+                    $response = $this->makeTmdbApiRequest($apiUrl, $apiParams);
                     if ($response->successful()) {
                         $apiResult = $response->json();
                         $results = $apiResult[$request->type . '_results'] ?? [];
@@ -141,7 +157,7 @@ class TmdbController extends Controller
                 } elseif (is_numeric($q)) {
                     $apiUrl = 'https://api.themoviedb.org/3/' . $request->type . '/' . $q;
                     $apiParams = ['api_key' => config('settings.tmdb_api'), 'language' => config('settings.tmdb_language')];
-                    $response = Http::get($apiUrl, $apiParams);
+                    $response = $this->makeTmdbApiRequest($apiUrl, $apiParams);
                     if ($response->successful()) {
                         $apiResult = ['results' => [$response->json()], 'total_results' => 1, 'total_pages' => 1];
                         $results = $apiResult['results'];
@@ -149,14 +165,14 @@ class TmdbController extends Controller
                 } else {
                     $apiUrl = 'https://api.themoviedb.org/3/search/' . $request->type;
                     $apiParams = ['query' => $q, 'api_key' => config('settings.tmdb_api'), 'language' => config('settings.tmdb_language'), 'page' => $page];
-                    $response = Http::get($apiUrl, $apiParams);
+                    $response = $this->makeTmdbApiRequest($apiUrl, $apiParams);
                     $apiResult = $response->json();
                     $results = $apiResult['results'] ?? [];
                 }
             } elseif ($sortable) {
                 $apiUrl = 'https://api.themoviedb.org/3/discover/' . $request->type;
                 $apiParams = ['sort_by' => $sortable, 'api_key' => config('settings.tmdb_api'), 'language' => config('settings.tmdb_language'), 'page' => $page];
-                $response = Http::get($apiUrl, $apiParams);
+                $response = $this->makeTmdbApiRequest($apiUrl, $apiParams);
                 $apiResult = $response->json();
                 $results = $apiResult['results'] ?? [];
             }
