@@ -644,19 +644,19 @@
             <div class="border-b border-gray-200 dark:border-gray-700">
                 <nav class="flex space-x-4 -mb-px px-5" aria-label="Tabs">
                     <button id="tab-import" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
-                        Importar do TMDB
+                        {{__('importar_do_tmdb')}}
                     </button>
                     <button id="tab-calendar" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Calendário de Lançamentos
+                        {{__('calendario_de_lancamentos')}}
                     </button>
                     <button id="tab-recent-movies" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Filmes Recentes
+                        {{__('filmes_recentes')}}
                     </button>
                     <button id="tab-recent-series" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Séries Recentes
+                        {{__('series_recentes')}}
                     </button>
                     <button id="tab-first-import" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Primeira Importação
+                        {{__('primeira_importacao')}}
                     </button>
                 </nav>
             </div>
@@ -687,7 +687,7 @@
                 </form>
 
                 <div class="border-t border-gray-200 dark:border-gray-800 px-5 py-4">
-                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">{{ __('Bulk Import (Client-side)') }}</h3>
+                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">{{ __('bulk_import_client_side') }}</h3>
                     <div id="bulk-import-container">
                         <div id="bulk-import-form">
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -699,28 +699,28 @@
                                     </x-form.select>
                                 </div>
                                 <div class="md:col-span-8">
-                                    <x-form.textarea name="bulk_ids" id="bulk_ids" placeholder="{{ __('Enter TMDB or IMDb IDs, one per line or separated by commas.') }}" rows="4"></x-form.textarea>
+                                    <x-form.textarea name="bulk_ids" id="bulk_ids" placeholder="{{ __('enter_tmdb_imdb_ids') }}" rows="4"></x-form.textarea>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <x-form.secondary type="button" id="start-bulk-import" class="w-full h-full">{{ __('Import IDs') }}</x-form.secondary>
+                                    <x-form.secondary type="button" id="start-bulk-import" class="w-full h-full">{{ __('import_ids') }}</x-form.secondary>
                                 </div>
                             </div>
                         </div>
                         
                         <div id="bulk-import-status" class="mt-4 hidden">
                             <div class="flex justify-between items-center">
-                                <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300">Importação em Progresso</h4>
-                                <button id="new-import-button" class="text-sm text-blue-600 hover:underline hidden">{{ __('Start New Import') }}</button>
+                                <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300">{{__('importacao_em_progresso')}}</h4>
+                                <button id="new-import-button" class="text-sm text-blue-600 hover:underline hidden">{{ __('start_new_import') }}</button>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
                                 <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                             </div>
                             <div class="flex justify-between text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">
-                                <span id="progress-text">Processando 0 de 0...</span>
+                                <span id="progress-text">{{__('processando')}} 0 {{__('de')}} 0...</span>
                                 <div>
-                                    <span class="text-green-500">Sucesso: <span id="success-count">0</span></span> | 
-                                    <span class="text-orange-500">Ignorados: <span id="skipped-count">0</span></span> |
-                                    <span class="text-red-500">Falhas: <span id="failed-count">0</span></span>
+                                    <span class="text-green-500">{{__('sucesso')}}: <span id="success-count">0</span></span> | 
+                                    <span class="text-orange-500">{{__('ignorados')}}: <span id="skipped-count">0</span></span> |
+                                    <span class="text-red-500">{{__('falhas')}}: <span id="failed-count">0</span></span>
                                 </div>
                             </div>
                             <div id="job-details" class="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -821,32 +821,32 @@
                         </div>
                         
                         <div class="view-tabs">
-                            <div class="view-tab active" data-view="month">Mês</div>
-                            <div class="view-tab" data-view="week">Semana</div>
-                            <div class="view-tab" data-view="day">Dia</div>
+                            <div class="view-tab active" data-view="month">{{__('mes')}}</div>
+                            <div class="view-tab" data-view="week">{{__('semana')}}</div>
+                            <div class="view-tab" data-view="day">{{__('dia')}}</div>
                         </div>
 
                         @if(isset($calendarStats))
                         <div class="calendar-stats">
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['total'] }}</div>
-                                <div class="stat-label">Total de Items</div>
+                                <div class="stat-label">{{__('total_items')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['series'] }}</div>
-                                <div class="stat-label">Séries</div>
+                                <div class="stat-label">{{__('series')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['animes'] }}</div>
-                                <div class="stat-label">Animes</div>
+                                <div class="stat-label">{{__('animes')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['synchronized'] }}</div>
-                                <div class="stat-label">Sincronizados</div>
+                                <div class="stat-label">{{__('sincronizados')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['pending'] }}</div>
-                                <div class="stat-label">Pendentes</div>
+                                <div class="stat-label">{{__('pendentes')}}</div>
                             </div>
                         </div>
                         @endif
@@ -856,50 +856,50 @@
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
                                 </svg>
-                                Sincronizar Tudo
+                                {{__('sincronizar_tudo')}}
                             </button>
                             <button class="sync-button series" id="sync-series-button" data-sync-type="series">
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 14.5M14.25 3.104c.251.023.501.05.75.082M19.8 14.5l-2.436 2.436a2.25 2.25 0 01-3.182 0l-5.434-5.435M19.8 14.5V16a2.25 2.25 0 01-2.25 2.25h-5.25m-5.25-14v5.714c0 .597-.237 1.17-.659 1.591L4.204 15.5M2.204 15.5l2.436 2.436a2.25 2.25 0 003.182 0l5.434-5.435M2.204 15.5V14a2.25 2.25 0 012.25-2.25H9.75" />
                                 </svg>
-                                Sincronizar Séries
+                                {{__('sincronizar_series')}}
                             </button>
                             <button class="sync-button anime" id="sync-anime-button" data-sync-type="anime">
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                                 </svg>
-                                Sincronizar Animes
+                                {{__('sincronizar_animes')}}
                             </button>
                             <button class="sync-button retry" id="retry-sync-button" style="display: none;">
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
                                 </svg>
-                                Tentar Novamente
+                                {{__('tentar_novamente')}}
                             </button>
                         </div>
 
                         <div class="sync-progress" id="sync-progress">
                             <div class="progress-header">
-                                <div class="progress-title" id="progress-title">Sincronizando...</div>
-                                <div class="progress-stats" id="progress-stats">0/0 processados</div>
+                                <div class="progress-title" id="progress-title">{{__('sincronizando')}}...</div>
+                                <div class="progress-stats" id="progress-stats">0/0 {{__('processados')}}</div>
                             </div>
                             <div class="progress-bar-container">
                                 <div class="progress-bar" id="sync-progress-bar"></div>
                             </div>
                             <div class="progress-stats">
-                                <span class="text-green-400">Criados: <span id="created-count">0</span></span> |
-                                <span class="text-blue-400">Atualizados: <span id="updated-count">0</span></span> |
-                                <span class="text-yellow-400">Ignorados: <span id="sync-skipped-count">0</span></span> |
-                                <span class="text-red-400">Falhas: <span id="sync-failed-count">0</span></span>
+                                <span class="text-green-400">{{__('criados')}}: <span id="created-count">0</span></span> |
+                                <span class="text-blue-400">{{__('atualizados')}}: <span id="updated-count">0</span></span> |
+                                <span class="text-yellow-400">{{__('ignorados')}}: <span id="sync-skipped-count">0</span></span> |
+                                <span class="text-red-400">{{__('falhas')}}: <span id="sync-failed-count">0</span></span>
                             </div>
                         </div>
 
                         <div class="content-filter">
-                            <div class="filter-tab active" data-filter="all">Todos</div>
-                            <div class="filter-tab" data-filter="series">Séries</div>
-                            <div class="filter-tab" data-filter="anime">Animes</div>
-                            <div class="filter-tab" data-filter="pending">Pendentes</div>
-                            <div class="filter-tab" data-filter="synced">Sincronizados</div>
+                            <div class="filter-tab active" data-filter="all">{{__('todos')}}</div>
+                            <div class="filter-tab" data-filter="series">{{__('series')}}</div>
+                            <div class="filter-tab" data-filter="anime">{{__('animes')}}</div>
+                            <div class="filter-tab" data-filter="pending">{{__('pendentes')}}</div>
+                            <div class="filter-tab" data-filter="synced">{{__('sincronizados')}}</div>
                         </div>
                     </div>
 
@@ -917,13 +917,13 @@
                                      data-view="month" 
                                      data-month="{{ $monthKey }}">
                                     <div class="calendar-weekdays">
-                                        <div class="weekday">Dom</div>
-                                        <div class="weekday">Seg</div>
-                                        <div class="weekday">Ter</div>
-                                        <div class="weekday">Qua</div>
-                                        <div class="weekday">Qui</div>
-                                        <div class="weekday">Sex</div>
-                                        <div class="weekday">Sáb</div>
+                                        <div class="weekday">{{__('dom')}}</div>
+                                        <div class="weekday">{{__('seg')}}</div>
+                                        <div class="weekday">{{__('ter')}}</div>
+                                        <div class="weekday">{{__('qua')}}</div>
+                                        <div class="weekday">{{__('qui')}}</div>
+                                        <div class="weekday">{{__('sex')}}</div>
+                                        <div class="weekday">{{__('sab')}}</div>
                                     </div>
                                     
                                     <div class="calendar-grid">
@@ -1000,13 +1000,13 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                            </svg>
-                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar calendário</h3>
+                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">{{__('erro_carregar_calendario')}}</h3>
                            <p class="mt-1 text-sm text-red-500">{{ $calendarError }}</p>
                            <button class="mt-4 sync-button retry" onclick="window.location.reload();">
                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
                                </svg>
-                               Tentar Novamente
+                               {{__('tentar_novamente')}}
                            </button>
                         </div>
                     @else
@@ -1014,8 +1014,8 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                            </svg>
-                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum lançamento encontrado</h3>
-                           <p class="mt-1 text-sm text-gray-500">Não há lançamentos futuros no calendário no momento.</p>
+                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">{{__('nenhum_lancamento_encontrado')}}</h3>
+                           <p class="mt-1 text-sm text-gray-500">{{__('sem_lancamentos_futuro')}}</p>
                         </div>
                     @endif
                 </div>
@@ -1025,28 +1025,28 @@
                 <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Importar Filmes Recentes</h3>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">{{__('importar_filmes_recentes')}}</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Lista dos últimos 100 filmes novos da API. Filmes que já existem no seu banco de dados não são exibidos.
+                                {{__('lista_ultimos_100_filmes')}}
                             </p>
                         </div>
                         <button id="start-recent-movies-import" class="sync-button">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            Importar Filmes Listados
+                            {{__('importar_filmes_listados')}}
                         </button>
                     </div>
                      <div id="recent-movies-import-status" class="sync-progress mt-4">
                         <div class="progress-header">
-                            <div class="progress-title">Importando Filmes...</div>
-                            <div class="progress-stats" id="recent-movies-progress-stats">0/0 processados</div>
+                            <div class="progress-title">{{__('importando_filmes')}}...</div>
+                            <div class="progress-stats" id="recent-movies-progress-stats">0/0 {{__('processados')}}</div>
                         </div>
                         <div class="progress-bar-container">
                             <div class="progress-bar" id="recent-movies-progress-bar"></div>
                         </div>
                         <div class="progress-stats">
-                            <span class="text-green-400">Criados: <span id="recent-movies-created-count">0</span></span> |
-                            <span class="text-yellow-400">Ignorados: <span id="recent-movies-skipped-count">0</span></span> |
-                            <span class="text-red-400">Falhas: <span id="recent-movies-failed-count">0</span></span>
+                            <span class="text-green-400">{{__('criados')}}: <span id="recent-movies-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{__('ignorados')}}: <span id="recent-movies-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{__('falhas')}}: <span id="recent-movies-failed-count">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -1397,7 +1397,7 @@
     <div id="calendar-modal" class="calendar-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title" class="modal-title">Lançamentos</h3>
+                <h3 id="modal-title" class="modal-title">{{__('lancamentos')}}</h3>
                 <button id="modal-close" class="modal-close">&times;</button>
             </div>
             <div id="modal-body" class="modal-body">
@@ -1490,9 +1490,8 @@
                 let currentView = 'month';
 
                 // Utils data PT-BR
-                const ptMonthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                                      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                const ptWeekdayShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                const ptMonthNames = [@foreach(['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'] as $month)'{{__($month)}}'@if(!$loop->last), @endif @endforeach];
+                const ptWeekdayShort = [@foreach(['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as $day)'{{__($day)}}'@if(!$loop->last), @endif @endforeach];
 
                 const formatISO = (d) => {
                     const y = d.getFullYear();

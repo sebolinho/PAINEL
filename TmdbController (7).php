@@ -525,24 +525,24 @@ class TmdbController extends Controller
 
             $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
             if (empty($postArray)) {
-                return response()->json(['message' => 'Não foi possível obter dados do TMDB.'], 404);
+                return response()->json(['message' => __('nao_foi_possivel_obter_dados_tmdb')], 404);
             }
             
             unset($postArray['tags']);
             $tags = [];
             if (!empty($postArray['title'])) {
-                $tags[] = 'assistir ' . $postArray['title'];
-                $tags[] = 'onde assistir ' . $postArray['title'];
-                $tags[] = 'assistir online' . $postArray['title'];
-                $tags[] = $postArray['title'] . ' online';
+                $tags[] = __('assistir') . ' ' . $postArray['title'];
+                $tags[] = __('onde_assistir') . ' ' . $postArray['title'];
+                $tags[] = __('assistir_online') . ' ' . $postArray['title'];
+                $tags[] = $postArray['title'] . ' ' . __('online');
             }
             if (!empty($postArray['title_sub'])) {
-                $tags[] = 'Ver ' . $postArray['title_sub'];
-                $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+                $tags[] = __('ver') . ' ' . $postArray['title_sub'];
+                $tags[] = __('ver') . ' ' . $postArray['title_sub'] . ' ' . __('online');
             }
             if (!empty($postArray['release_date'])) {
                 $year = date('Y', strtotime($postArray['release_date']));
-                $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+                $tags[] = __('assistir') . ' ' . $postArray['title'] . ' ' . $year;
             }
             $postArray['tags'] = $tags;
 
@@ -552,7 +552,7 @@ class TmdbController extends Controller
             $isUpdate = false;
             if ($existingPost) {
                 if ($request->type === 'movie') {
-                    return response()->json(['message' => "Filme '{$postArray['title']}' já existe, ignorado."], 208);
+                    return response()->json(['message' => __('Movie') . " '{$postArray['title']}' " . __('ja_existe_ignorado')], 208);
                 }
                 
                 $isUpdate = true;
@@ -566,7 +566,7 @@ class TmdbController extends Controller
                 $dbEpisodeCount = $existingPost->episodes()->count();
 
                 if ($apiEpisodeCount > 0 && $dbEpisodeCount >= $apiEpisodeCount) {
-                    return response()->json(['message' => "Série '{$postArray['title']}' já está atualizada, ignorada."], 208);
+                    return response()->json(['message' => __('TV Show') . " '{$postArray['title']}' " . __('ja_esta_atualizada_ignorada')], 208);
                 }
                 
                 $model = $existingPost;
@@ -668,7 +668,7 @@ class TmdbController extends Controller
             return response()->json(['message' => $message], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro: ' . $e->getMessage() . ' na linha ' . $e->getLine()], 500);
+            return response()->json(['message' => __('erro') . ': ' . $e->getMessage() . ' na linha ' . $e->getLine()], 500);
         }
     }
 
@@ -677,34 +677,34 @@ class TmdbController extends Controller
         $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
 
         if (empty($postArray)) {
-            return response()->json(['message' => "Não foi possível encontrar dados para o ID informado."], 404);
+            return response()->json(['message' => __('nao_foi_possivel_obter_dados_tmdb')], 404);
         }
 
         unset($postArray['tags']);
         $tags = [];
         if (!empty($postArray['title'])) {
-            $tags[] = 'assistir ' . $postArray['title'];
-            $tags[] = 'onde assistir ' . $postArray['title'];
-            $tags[] = $postArray['title'] . ' online';
-            $tags[] = $postArray['title'] . ' completo dublado';
-            $tags[] = $postArray['title'] . ' grátis';
-            $tags[] = 'filme completo ' . $postArray['title'];
+            $tags[] = __('assistir') . ' ' . $postArray['title'];
+            $tags[] = __('onde_assistir') . ' ' . $postArray['title'];
+            $tags[] = $postArray['title'] . ' ' . __('online');
+            $tags[] = $postArray['title'] . ' ' . __('completo_dublado');
+            $tags[] = $postArray['title'] . ' ' . __('gratis');
+            $tags[] = __('filme_completo') . ' ' . $postArray['title'];
         }
         if (!empty($postArray['title_sub'])) {
-            $tags[] = 'Ver ' . $postArray['title_sub'];
-            $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $tags[] = __('ver') . ' ' . $postArray['title_sub'];
+            $tags[] = __('ver') . ' ' . $postArray['title_sub'] . ' ' . __('online');
         }
         if (!empty($postArray['release_date'])) {
             $year = date('Y', strtotime($postArray['release_date']));
-            $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+            $tags[] = __('assistir') . ' ' . $postArray['title'] . ' ' . $year;
         }
         $postArray['tags'] = $tags;
 
         if (!empty($postArray['title_sub'])) {
-            $postArray['title_sub'] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $postArray['title_sub'] = __('ver') . ' ' . $postArray['title_sub'] . ' ' . __('online');
         }
         if (!empty($postArray['overview'])) {
-            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ver filme online';
+            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ver filme ' . __('online');
         }
 
         return response()->json($postArray);
@@ -723,7 +723,7 @@ class TmdbController extends Controller
     {
         $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
         if ($key !== $secretKey) {
-            return response('Acesso não autorizado.', 403);
+            return response(__('Acesso não autorizado.'), 403);
         }
 
         set_time_limit(3600); 

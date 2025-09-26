@@ -55,7 +55,7 @@ Route::middleware(['web', 'auth', IsAdmin::class])
         Artisan::call('view:clear');
         Artisan::call('config:clear');
 
-        return redirect()->route('admin.index')->with('success', __('Cache cleared'));
+        return redirect()->route('admin.index')->with('success', __('cache_cleared'));
     })->name('cache.clear');
 
     // Settings
