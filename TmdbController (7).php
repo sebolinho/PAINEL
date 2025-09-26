@@ -162,11 +162,16 @@ class TmdbController extends Controller
 
             $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->values()->all();
 
-            $localCounts = Post::whereIn('tmdb_id', $tmdbIds)
-                ->where('type', 'tv')
-                ->withCount('episodes')
-                ->get()
-                ->pluck('episodes_count', 'tmdb_id');
+            // Usar chunks para evitar problemas de memória com muitos IDs
+            $localCounts = collect();
+            foreach (array_chunk($tmdbIds, 100) as $chunk) {
+                $chunkCounts = Post::whereIn('tmdb_id', $chunk)
+                    ->where('type', 'tv')
+                    ->withCount('episodes')
+                    ->get()
+                    ->pluck('episodes_count', 'tmdb_id');
+                $localCounts = $localCounts->merge($chunkCounts);
+            }
 
             $apiCounts = [];
             foreach ($tmdbIds as $id) {
@@ -386,7 +391,8 @@ class TmdbController extends Controller
     }
 
     /**
-     * Busca TODOS os dados de filmes e séries para primeira importação, ordenados do mais antigo para o mais novo.
+     * Busca dados de filmes e séries para primeira importação com limite de memória.
+     * Limita o número de itens e usa processamento em chunks para evitar estouro de memória.
      *
      * @return array
      */
@@ -395,6 +401,10 @@ class TmdbController extends Controller
         $firstImportMovies = [];
         $firstImportSeries = [];
         $firstImportError = null;
+        
+        // Limitar a 500 itens por tipo para evitar problemas de memória
+        $maxItemsPerType = 500;
+        $chunkSize = 100; // Processar IDs em chunks de 100
 
         try {
             // Buscar filmes
@@ -405,16 +415,21 @@ class TmdbController extends Controller
                     $tmdbMovieIds = collect($movieIds)
                         ->map(fn($id) => is_string($id) ? trim($id) : $id)
                         ->filter(fn($id) => is_numeric($id))
-                        ->map(fn($id) => (int)$id);
+                        ->map(fn($id) => (int)$id)
+                        ->take($maxItemsPerType); // Limitar a quantidade de IDs
 
-                    // Para primeira importação, pegar TODOS os IDs ordenados do mais antigo para o mais novo
                     $allMovieIds = $tmdbMovieIds->values()->all();
 
                     if (!empty($allMovieIds)) {
-                        $existingMovieIds = Post::where('type', 'movie')
-                            ->whereIn('tmdb_id', $allMovieIds)
-                            ->pluck('tmdb_id')
-                            ->all();
+                        // Processar IDs em chunks para evitar queries muito grandes
+                        $existingMovieIds = [];
+                        foreach (array_chunk($allMovieIds, $chunkSize) as $chunk) {
+                            $chunkExisting = Post::where('type', 'movie')
+                                ->whereIn('tmdb_id', $chunk)
+                                ->pluck('tmdb_id')
+                                ->all();
+                            $existingMovieIds = array_merge($existingMovieIds, $chunkExisting);
+                        }
                             
                         $newMovieIds = array_values(array_diff($allMovieIds, $existingMovieIds));
 
@@ -442,16 +457,21 @@ class TmdbController extends Controller
                     $tmdbSeriesIds = collect($seriesIds)
                         ->map(fn($id) => is_string($id) ? trim($id) : $id)
                         ->filter(fn($id) => is_numeric($id))
-                        ->map(fn($id) => (int)$id);
+                        ->map(fn($id) => (int)$id)
+                        ->take($maxItemsPerType); // Limitar a quantidade de IDs
 
-                    // Para primeira importação, pegar TODOS os IDs ordenados do mais antigo para o mais novo
                     $allSeriesIds = $tmdbSeriesIds->values()->all();
 
                     if (!empty($allSeriesIds)) {
-                        $existingSeriesIds = Post::where('type', 'tv')
-                            ->whereIn('tmdb_id', $allSeriesIds)
-                            ->pluck('tmdb_id')
-                            ->all();
+                        // Processar IDs em chunks para evitar queries muito grandes
+                        $existingSeriesIds = [];
+                        foreach (array_chunk($allSeriesIds, $chunkSize) as $chunk) {
+                            $chunkExisting = Post::where('type', 'tv')
+                                ->whereIn('tmdb_id', $chunk)
+                                ->pluck('tmdb_id')
+                                ->all();
+                            $existingSeriesIds = array_merge($existingSeriesIds, $chunkExisting);
+                        }
                             
                         $newSeriesIds = array_values(array_diff($allSeriesIds, $existingSeriesIds));
 
