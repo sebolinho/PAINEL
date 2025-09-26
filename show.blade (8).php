@@ -1441,6 +1441,13 @@
                             await new Promise(resolve => setTimeout(resolve, 10));
                         }
                         hideBackgroundNotification();
+                        
+                        // Atualiza o texto de progresso quando todas as operações de background terminarem
+                        const progressText = document.getElementById('progress-text');
+                        if (progressText && progressText.textContent.includes('background')) {
+                            // Se ainda está mostrando texto de background, atualiza para "Concluída"
+                            progressText.textContent = 'Importação Concluída!';
+                        }
                     } finally {
                         isProcessingBackground = false;
                     }
@@ -2575,18 +2582,18 @@
                             } else {
                                 // Se a aba não estiver ativa, adiciona à fila de background
                                 addToBackgroundQueue(() => processJob(id));
-                                // Simula processamento para atualizar UI
-                                failedCount++;
-                                updateOverallProgress();
+                                // Jobs em background não devem ser marcados como falhas
+                                // Eles serão processados quando a aba ficar ativa novamente
                             }
                         }
                         
                         // Se houver operações pendentes, mostra uma mensagem
+                        const processedCount = successCount + skippedCount + failedCount;
                         if (backgroundOperationsQueue.length > 0) {
                             showBackgroundNotification(backgroundOperationsQueue.length);
-                            document.getElementById('progress-text').textContent = `Importação continuará em background (${backgroundOperationsQueue.length} itens pendentes)`;
+                            document.getElementById('progress-text').textContent = `Processados ${processedCount} de ${totalJobs}... (${backgroundOperationsQueue.length} itens continuarão em background)`;
                         } else {
-                            document.getElementById('progress-text').textContent = 'Importação Concluída!';
+                            document.getElementById('progress-text').textContent = processedCount === totalJobs ? 'Importação Concluída!' : `Processados ${processedCount} de ${totalJobs}...`;
                         }
                         newImportButton.classList.remove('hidden');
                     });
