@@ -631,6 +631,15 @@
     </style>
 
     <div class="container-fluid">
+        <!-- Background operations notification -->
+        <div id="background-notification" class="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden">
+            <div class="flex items-center gap-2">
+                <div class="loading-spinner"></div>
+                <span id="background-text">Operações continuando em background...</span>
+                <button id="close-notification" class="ml-2 text-white hover:text-gray-200">×</button>
+            </div>
+        </div>
+        
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-800">
             <div class="border-b border-gray-200 dark:border-gray-700">
                 <nav class="flex space-x-4 -mb-px px-5" aria-label="Tabs">
@@ -1410,6 +1419,75 @@
     @push('javascript')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
+                // Page Visibility API para detectar mudanças de aba
+                let isTabActive = true;
+                let backgroundOperationsQueue = [];
+                let isProcessingBackground = false;
+                
+                document.addEventListener('visibilitychange', function() {
+                    isTabActive = !document.hidden;
+                    if (isTabActive && backgroundOperationsQueue.length > 0 && !isProcessingBackground) {
+                        console.log('Tab reativada, processando operações em background...');
+                        processBackgroundQueue();
+                    }
+                });
+                
+                // Função para adicionar operações à fila de background
+                function addToBackgroundQueue(operation) {
+                    backgroundOperationsQueue.push(operation);
+                }
+                
+                // Processa operações que ficaram pendentes enquanto a aba estava inativa
+                async function processBackgroundQueue() {
+                    if (isProcessingBackground || backgroundOperationsQueue.length === 0) return;
+                    isProcessingBackground = true;
+                    
+                    try {
+                        while (backgroundOperationsQueue.length > 0) {
+                            const operation = backgroundOperationsQueue.shift();
+                            await operation();
+                            updateBackgroundNotification();
+                            // Permite que a UI seja atualizada
+                            await new Promise(resolve => setTimeout(resolve, 10));
+                        }
+                        hideBackgroundNotification();
+                    } finally {
+                        isProcessingBackground = false;
+                    }
+                }
+                
+                // Funções para controlar a notificação de background
+                function showBackgroundNotification(count) {
+                    const notification = document.getElementById('background-notification');
+                    const text = document.getElementById('background-text');
+                    if (notification && text) {
+                        text.textContent = `${count} operações continuando em background...`;
+                        notification.classList.remove('hidden');
+                    }
+                }
+                
+                function updateBackgroundNotification() {
+                    const notification = document.getElementById('background-notification');
+                    const text = document.getElementById('background-text');
+                    if (notification && text && backgroundOperationsQueue.length > 0) {
+                        text.textContent = `${backgroundOperationsQueue.length} operações restantes em background...`;
+                    }
+                }
+                
+                function hideBackgroundNotification() {
+                    const notification = document.getElementById('background-notification');
+                    if (notification) {
+                        notification.classList.add('hidden');
+                    }
+                }
+                
+                // Event listener para fechar a notificação
+                document.addEventListener('click', function(e) {
+                    if (e.target.id === 'close-notification') {
+                        hideBackgroundNotification();
+                    }
+                });
+                
                 // Estado
                 let currentDate = new Date();
                 let currentView = 'month';
@@ -2006,7 +2084,9 @@
                     }
                     let processed = 0, created = 0, updated = 0, skipped = 0, failed = 0;
                     updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
-                    for (const tmdbId of tmdbIds) {
+                    
+                    // Função para processar um item individual
+                    const processItem = async (tmdbId) => {
                         const formData = new FormData();
                         formData.append('_token', '{{ csrf_token() }}');
                         formData.append('type', 'tv');
@@ -2020,9 +2100,42 @@
                         } catch (e) { failed++; }
                         finally {
                             processed++;
-                            await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed); resolve(); }));
+                            // Se a aba não estiver ativa, usa setTimeout em vez de requestAnimationFrame
+                            const updateUI = () => {
+                                updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
+                            };
+                            
+                            if (isTabActive) {
+                                await new Promise(resolve => requestAnimationFrame(() => { updateUI(); resolve(); }));
+                            } else {
+                                await new Promise(resolve => setTimeout(() => { updateUI(); resolve(); }, 50));
+                            }
+                        }
+                    };
+                    
+                    // Processa todos os itens, continuando mesmo se a aba ficar inativa
+                    for (const tmdbId of tmdbIds) {
+                        if (isTabActive) {
+                            await processItem(tmdbId);
+                        } else {
+                            // Se a aba não estiver ativa, adiciona à fila de background
+                            addToBackgroundQueue(() => processItem(tmdbId));
+                            // Simula processamento para atualizar UI
+                            processed++;
+                            failed++;
+                            updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
                         }
                     }
+                    
+                    // Se houver operações pendentes, mostra uma mensagem
+                    if (backgroundOperationsQueue.length > 0) {
+                        showBackgroundNotification(backgroundOperationsQueue.length);
+                        toggleSyncButtons(true);
+                        isBulkSyncRunning = false;
+                        alert(`Operações continuarão em background. ${backgroundOperationsQueue.length} itens serão processados quando você retornar à aba.`);
+                        return;
+                    }
+                    
                     toggleSyncButtons(true);
                     isBulkSyncRunning = false;
                     alert(`Sincronização concluída.\nCriados: ${created} | Atualizados: ${updated} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
@@ -2419,7 +2532,9 @@
                             document.getElementById('failed-count').textContent = failedCount;
                         };
                         updateOverallProgress();
-                        for (const id of ids) {
+                        
+                        // Função para processar um job individual
+                        const processJob = async (id) => {
                             const jobElement = document.createElement('div');
                             jobElement.className = 'text-sm p-2 rounded-md bg-gray-50 dark:bg-gray-800';
                             jobElement.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold text-gray-800 dark:text-gray-200">ID: ${id}</span><span class="job-status font-bold text-blue-500">⚙ Processando...</span></div><p class="job-message text-xs text-gray-500 dark:text-gray-400 mt-1"></p>`;
@@ -2461,8 +2576,28 @@
                                 jobMessageP.textContent = 'Erro de rede ou resposta inválida do servidor.';
                             }
                             updateOverallProgress();
+                        };
+                        
+                        // Processa todos os IDs, continuando mesmo se a aba ficar inativa
+                        for (const id of ids) {
+                            if (isTabActive) {
+                                await processJob(id);
+                            } else {
+                                // Se a aba não estiver ativa, adiciona à fila de background
+                                addToBackgroundQueue(() => processJob(id));
+                                // Simula processamento para atualizar UI
+                                failedCount++;
+                                updateOverallProgress();
+                            }
                         }
-                        document.getElementById('progress-text').textContent = 'Importação Concluída!';
+                        
+                        // Se houver operações pendentes, mostra uma mensagem
+                        if (backgroundOperationsQueue.length > 0) {
+                            showBackgroundNotification(backgroundOperationsQueue.length);
+                            document.getElementById('progress-text').textContent = `Importação continuará em background (${backgroundOperationsQueue.length} itens pendentes)`;
+                        } else {
+                            document.getElementById('progress-text').textContent = 'Importação Concluída!';
+                        }
                         newImportButton.classList.remove('hidden');
                     });
                 }
