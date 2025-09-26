@@ -525,7 +525,7 @@ class TmdbController extends Controller
 
             $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
             if (empty($postArray)) {
-                return response()->json(['message' => 'Não foi possível obter dados do TMDB.'], 404);
+                return response()->json(['message' => lang('nao') . ' ' . lang('foi') . ' ' . lang('possivel') . ' ' . lang('obter') . ' ' . lang('dados') . ' ' . lang('do') . ' ' . lang('tmdb') . '.'], 404);
             }
             
             unset($postArray['tags']);
@@ -552,7 +552,7 @@ class TmdbController extends Controller
             $isUpdate = false;
             if ($existingPost) {
                 if ($request->type === 'movie') {
-                    return response()->json(['message' => "Filme '{$postArray['title']}' já existe, ignorado."], 208);
+                    return response()->json(['message' => lang('filme') . " '{$postArray['title']}' " . lang('ja') . ' ' . lang('existe') . ', ' . lang('ignorado') . '.'], 208);
                 }
                 
                 $isUpdate = true;
@@ -677,7 +677,7 @@ class TmdbController extends Controller
         $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
 
         if (empty($postArray)) {
-            return response()->json(['message' => "Não foi possível encontrar dados para o ID informado."], 404);
+            return response()->json(['message' => lang('nao') . ' ' . lang('foi') . ' ' . lang('possivel') . ' ' . lang('encontrar') . ' ' . lang('dados') . ' ' . lang('para') . ' ' . lang('o') . ' ID ' . lang('informado') . '.'], 404);
         }
 
         unset($postArray['tags']);
@@ -781,7 +781,7 @@ class TmdbController extends Controller
             $newMovieIds = collect($recentMoviesData['recentMovies'])->pluck('id')->all();
 
             if (empty($newMovieIds)) {
-                return response('Nenhum filme novo para sincronizar.');
+                return response(lang('nenhum') . ' ' . lang('filme') . ' ' . lang('novo') . ' ' . lang('para') . ' ' . lang('sincronizar') . '.');
             }
 
             $created = 0; $failed = 0; $skipped = 0;
