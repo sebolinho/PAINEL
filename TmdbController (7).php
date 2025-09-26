@@ -531,18 +531,18 @@ class TmdbController extends Controller
             unset($postArray['tags']);
             $tags = [];
             if (!empty($postArray['title'])) {
-                $tags[] = 'assistir ' . $postArray['title'];
-                $tags[] = 'onde assistir ' . $postArray['title'];
-                $tags[] = 'assistir online' . $postArray['title'];
-                $tags[] = $postArray['title'] . ' online';
+                $tags[] = lang('assistir') . ' ' . $postArray['title'];
+                $tags[] = lang('onde') . ' ' . lang('assistir') . ' ' . $postArray['title'];
+                $tags[] = lang('assistir') . ' ' . lang('online') . ' ' . $postArray['title'];
+                $tags[] = $postArray['title'] . ' ' . lang('online');
             }
             if (!empty($postArray['title_sub'])) {
-                $tags[] = 'Ver ' . $postArray['title_sub'];
-                $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+                $tags[] = lang('ver') . ' ' . $postArray['title_sub'];
+                $tags[] = lang('ver') . ' ' . $postArray['title_sub'] . ' ' . lang('online');
             }
             if (!empty($postArray['release_date'])) {
                 $year = date('Y', strtotime($postArray['release_date']));
-                $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+                $tags[] = lang('assistir') . ' ' . $postArray['title'] . ' ' . $year;
             }
             $postArray['tags'] = $tags;
 
@@ -683,28 +683,28 @@ class TmdbController extends Controller
         unset($postArray['tags']);
         $tags = [];
         if (!empty($postArray['title'])) {
-            $tags[] = 'assistir ' . $postArray['title'];
-            $tags[] = 'onde assistir ' . $postArray['title'];
-            $tags[] = $postArray['title'] . ' online';
-            $tags[] = $postArray['title'] . ' completo dublado';
-            $tags[] = $postArray['title'] . ' grátis';
-            $tags[] = 'filme completo ' . $postArray['title'];
+            $tags[] = lang('assistir') . ' ' . $postArray['title'];
+            $tags[] = lang('onde') . ' ' . lang('assistir') . ' ' . $postArray['title'];
+            $tags[] = $postArray['title'] . ' ' . lang('online');
+            $tags[] = $postArray['title'] . ' ' . lang('completo') . ' ' . lang('dublado');
+            $tags[] = $postArray['title'] . ' ' . lang('gratis');
+            $tags[] = lang('filme') . ' ' . lang('completo') . ' ' . $postArray['title'];
         }
         if (!empty($postArray['title_sub'])) {
-            $tags[] = 'Ver ' . $postArray['title_sub'];
-            $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $tags[] = lang('ver') . ' ' . $postArray['title_sub'];
+            $tags[] = lang('ver') . ' ' . $postArray['title_sub'] . ' ' . lang('online');
         }
         if (!empty($postArray['release_date'])) {
             $year = date('Y', strtotime($postArray['release_date']));
-            $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+            $tags[] = lang('assistir') . ' ' . $postArray['title'] . ' ' . $year;
         }
         $postArray['tags'] = $tags;
 
         if (!empty($postArray['title_sub'])) {
-            $postArray['title_sub'] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $postArray['title_sub'] = lang('ver') . ' ' . $postArray['title_sub'] . ' ' . lang('online');
         }
         if (!empty($postArray['overview'])) {
-            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ver filme online';
+            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ' . lang('ver') . ' ' . lang('filme') . ' ' . lang('online');
         }
 
         return response()->json($postArray);
