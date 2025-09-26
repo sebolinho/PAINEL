@@ -1308,7 +1308,7 @@
                                 </h4>
                                 <div class="max-h-96 overflow-y-auto">
                                     @if(isset($firstImportMovies) && count($firstImportMovies) > 0)
-                                        @foreach(array_slice($firstImportMovies, 0, 50) as $movie)
+                                        @foreach($firstImportMovies as $movie)
                                             <div class="first-import-movie-row flex items-center space-x-4 p-3 border-b border-gray-100 dark:border-gray-800" data-tmdb-id="{{ $movie['id'] ?? '' }}">
                                                 <div class="aspect-[2/3] bg-gray-100 rounded-md w-12 overflow-hidden relative flex-shrink-0">
                                                     @if($movie['image'] ?? '')
@@ -1329,11 +1329,6 @@
                                                 </button>
                                             </div>
                                         @endforeach
-                                        @if(count($firstImportMovies) > 50)
-                                            <div class="p-3 text-center text-sm text-gray-500">
-                                                E mais {{ count($firstImportMovies) - 50 }} filmes...
-                                            </div>
-                                        @endif
                                     @elseif(isset($firstImportError))
                                         <div class="text-center py-10">
                                             <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar filmes</h5>
@@ -1358,7 +1353,7 @@
                                 </h4>
                                 <div class="max-h-96 overflow-y-auto">
                                     @if(isset($firstImportSeries) && count($firstImportSeries) > 0)
-                                        @foreach(array_slice($firstImportSeries, 0, 50) as $series)
+                                        @foreach($firstImportSeries as $series)
                                             <div class="first-import-series-row flex items-center space-x-4 p-3 border-b border-gray-100 dark:border-gray-800" data-tmdb-id="{{ $series['id'] ?? '' }}">
                                                 <div class="aspect-[2/3] bg-gray-100 rounded-md w-12 overflow-hidden relative flex-shrink-0">
                                                     @if($series['image'] ?? '')
@@ -1379,11 +1374,6 @@
                                                 </button>
                                             </div>
                                         @endforeach
-                                        @if(count($firstImportSeries) > 50)
-                                            <div class="p-3 text-center text-sm text-gray-500">
-                                                E mais {{ count($firstImportSeries) - 50 }} séries...
-                                            </div>
-                                        @endif
                                     @elseif(isset($firstImportError))
                                         <div class="text-center py-10">
                                             <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar séries</h5>
