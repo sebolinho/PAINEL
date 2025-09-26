@@ -525,24 +525,24 @@ class TmdbController extends Controller
 
             $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
             if (empty($postArray)) {
-                return response()->json(['message' => 'Não foi possível obter dados do TMDB.'], 404);
+                return response()->json(['message' => lang('nao') . ' ' . lang('foi') . ' ' . lang('possivel') . ' ' . lang('obter') . ' ' . lang('dados') . ' ' . lang('do') . ' ' . lang('tmdb') . '.'], 404);
             }
             
             unset($postArray['tags']);
             $tags = [];
             if (!empty($postArray['title'])) {
-                $tags[] = 'assistir ' . $postArray['title'];
-                $tags[] = 'onde assistir ' . $postArray['title'];
-                $tags[] = 'assistir online' . $postArray['title'];
-                $tags[] = $postArray['title'] . ' online';
+                $tags[] = lang('assistir') . ' ' . $postArray['title'];
+                $tags[] = lang('onde') . ' ' . lang('assistir') . ' ' . $postArray['title'];
+                $tags[] = lang('assistir') . ' ' . lang('online') . ' ' . $postArray['title'];
+                $tags[] = $postArray['title'] . ' ' . lang('online');
             }
             if (!empty($postArray['title_sub'])) {
-                $tags[] = 'Ver ' . $postArray['title_sub'];
-                $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+                $tags[] = lang('ver') . ' ' . $postArray['title_sub'];
+                $tags[] = lang('ver') . ' ' . $postArray['title_sub'] . ' ' . lang('online');
             }
             if (!empty($postArray['release_date'])) {
                 $year = date('Y', strtotime($postArray['release_date']));
-                $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+                $tags[] = lang('assistir') . ' ' . $postArray['title'] . ' ' . $year;
             }
             $postArray['tags'] = $tags;
 
@@ -552,7 +552,7 @@ class TmdbController extends Controller
             $isUpdate = false;
             if ($existingPost) {
                 if ($request->type === 'movie') {
-                    return response()->json(['message' => "Filme '{$postArray['title']}' já existe, ignorado."], 208);
+                    return response()->json(['message' => lang('filme') . " '{$postArray['title']}' " . lang('ja') . ' ' . lang('existe') . ', ' . lang('ignorado') . '.'], 208);
                 }
                 
                 $isUpdate = true;
@@ -677,34 +677,34 @@ class TmdbController extends Controller
         $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
 
         if (empty($postArray)) {
-            return response()->json(['message' => "Não foi possível encontrar dados para o ID informado."], 404);
+            return response()->json(['message' => lang('nao') . ' ' . lang('foi') . ' ' . lang('possivel') . ' ' . lang('encontrar') . ' ' . lang('dados') . ' ' . lang('para') . ' ' . lang('o') . ' ID ' . lang('informado') . '.'], 404);
         }
 
         unset($postArray['tags']);
         $tags = [];
         if (!empty($postArray['title'])) {
-            $tags[] = 'assistir ' . $postArray['title'];
-            $tags[] = 'onde assistir ' . $postArray['title'];
-            $tags[] = $postArray['title'] . ' online';
-            $tags[] = $postArray['title'] . ' completo dublado';
-            $tags[] = $postArray['title'] . ' grátis';
-            $tags[] = 'filme completo ' . $postArray['title'];
+            $tags[] = lang('assistir') . ' ' . $postArray['title'];
+            $tags[] = lang('onde') . ' ' . lang('assistir') . ' ' . $postArray['title'];
+            $tags[] = $postArray['title'] . ' ' . lang('online');
+            $tags[] = $postArray['title'] . ' ' . lang('completo') . ' ' . lang('dublado');
+            $tags[] = $postArray['title'] . ' ' . lang('gratis');
+            $tags[] = lang('filme') . ' ' . lang('completo') . ' ' . $postArray['title'];
         }
         if (!empty($postArray['title_sub'])) {
-            $tags[] = 'Ver ' . $postArray['title_sub'];
-            $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $tags[] = lang('ver') . ' ' . $postArray['title_sub'];
+            $tags[] = lang('ver') . ' ' . $postArray['title_sub'] . ' ' . lang('online');
         }
         if (!empty($postArray['release_date'])) {
             $year = date('Y', strtotime($postArray['release_date']));
-            $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+            $tags[] = lang('assistir') . ' ' . $postArray['title'] . ' ' . $year;
         }
         $postArray['tags'] = $tags;
 
         if (!empty($postArray['title_sub'])) {
-            $postArray['title_sub'] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $postArray['title_sub'] = lang('ver') . ' ' . $postArray['title_sub'] . ' ' . lang('online');
         }
         if (!empty($postArray['overview'])) {
-            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ver filme online';
+            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ' . lang('ver') . ' ' . lang('filme') . ' ' . lang('online');
         }
 
         return response()->json($postArray);
@@ -781,7 +781,7 @@ class TmdbController extends Controller
             $newMovieIds = collect($recentMoviesData['recentMovies'])->pluck('id')->all();
 
             if (empty($newMovieIds)) {
-                return response('Nenhum filme novo para sincronizar.');
+                return response(lang('nenhum') . ' ' . lang('filme') . ' ' . lang('novo') . ' ' . lang('para') . ' ' . lang('sincronizar') . '.');
             }
 
             $created = 0; $failed = 0; $skipped = 0;

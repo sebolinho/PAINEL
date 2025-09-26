@@ -647,7 +647,7 @@
                         Importar do TMDB
                     </button>
                     <button id="tab-calendar" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Calendário de Lançamentos
+                        {{ lang('calendario') }} {{ lang('de') }} {{ lang('lancamentos') }}
                     </button>
                     <button id="tab-recent-movies" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
                         Filmes Recentes
@@ -716,11 +716,11 @@
                                 <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                             </div>
                             <div class="flex justify-between text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">
-                                <span id="progress-text">Processando 0 de 0...</span>
+                                <span id="progress-text">{{ lang('processando') }} 0 {{ lang('de') }} 0...</span>
                                 <div>
-                                    <span class="text-green-500">Sucesso: <span id="success-count">0</span></span> | 
-                                    <span class="text-orange-500">Ignorados: <span id="skipped-count">0</span></span> |
-                                    <span class="text-red-500">Falhas: <span id="failed-count">0</span></span>
+                                    <span class="text-green-500">{{ lang('sucesso') }}: <span id="success-count">0</span></span> | 
+                                    <span class="text-orange-500">{{ lang('ignorados') }}: <span id="skipped-count">0</span></span> |
+                                    <span class="text-red-500">{{ lang('falhas') }}: <span id="failed-count">0</span></span>
                                 </div>
                             </div>
                             <div id="job-details" class="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -821,8 +821,8 @@
                         </div>
                         
                         <div class="view-tabs">
-                            <div class="view-tab active" data-view="month">Mês</div>
-                            <div class="view-tab" data-view="week">Semana</div>
+                            <div class="view-tab active" data-view="month">{{ lang('mes') }}</div>
+                            <div class="view-tab" data-view="week">{{ lang('semana') }}</div>
                             <div class="view-tab" data-view="day">Dia</div>
                         </div>
 
@@ -887,10 +887,10 @@
                                 <div class="progress-bar" id="sync-progress-bar"></div>
                             </div>
                             <div class="progress-stats">
-                                <span class="text-green-400">Criados: <span id="created-count">0</span></span> |
+                                <span class="text-green-400">{{ lang('criados') }}: <span id="created-count">0</span></span> |
                                 <span class="text-blue-400">Atualizados: <span id="updated-count">0</span></span> |
-                                <span class="text-yellow-400">Ignorados: <span id="sync-skipped-count">0</span></span> |
-                                <span class="text-red-400">Falhas: <span id="sync-failed-count">0</span></span>
+                                <span class="text-yellow-400">{{ lang('ignorados') }}: <span id="sync-skipped-count">0</span></span> |
+                                <span class="text-red-400">{{ lang('falhas') }}: <span id="sync-failed-count">0</span></span>
                             </div>
                         </div>
 
@@ -1014,7 +1014,7 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                            </svg>
-                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum lançamento encontrado</h3>
+                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">{{ lang('nenhum') }} {{ lang('lancamento') }} {{ lang('encontrado') }}</h3>
                            <p class="mt-1 text-sm text-gray-500">Não há lançamentos futuros no calendário no momento.</p>
                         </div>
                     @endif
@@ -1044,9 +1044,9 @@
                             <div class="progress-bar" id="recent-movies-progress-bar"></div>
                         </div>
                         <div class="progress-stats">
-                            <span class="text-green-400">Criados: <span id="recent-movies-created-count">0</span></span> |
-                            <span class="text-yellow-400">Ignorados: <span id="recent-movies-skipped-count">0</span></span> |
-                            <span class="text-red-400">Falhas: <span id="recent-movies-failed-count">0</span></span>
+                            <span class="text-green-400">{{ lang('criados') }}: <span id="recent-movies-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{ lang('ignorados') }}: <span id="recent-movies-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{ lang('falhas') }}: <span id="recent-movies-failed-count">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -1127,7 +1127,7 @@
                         @else
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo encontrado</h3>
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{ lang('nenhum') }} {{ lang('filme') }} {{ lang('novo') }} {{ lang('encontrado') }}</h3>
                                    <p class="mt-1 text-sm text-gray-500">Todos os filmes recentes da API já parecem estar em seu banco de dados.</p>
                                 </td>
                             </tr>
@@ -1160,9 +1160,9 @@
                             <div class="progress-bar" id="recent-series-progress-bar"></div>
                         </div>
                         <div class="progress-stats">
-                            <span class="text-green-400">Criados: <span id="recent-series-created-count">0</span></span> |
-                            <span class="text-yellow-400">Ignorados: <span id="recent-series-skipped-count">0</span></span> |
-                            <span class="text-red-400">Falhas: <span id="recent-series-failed-count">0</span></span>
+                            <span class="text-green-400">{{ lang('criados') }}: <span id="recent-series-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{ lang('ignorados') }}: <span id="recent-series-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{ lang('falhas') }}: <span id="recent-series-failed-count">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -1288,9 +1288,9 @@
                             <div class="progress-bar" id="first-import-progress-bar"></div>
                         </div>
                         <div class="progress-stats">
-                            <span class="text-green-400">Criados: <span id="first-import-created-count">0</span></span> |
-                            <span class="text-yellow-400">Ignorados: <span id="first-import-skipped-count">0</span></span> |
-                            <span class="text-red-400">Falhas: <span id="first-import-failed-count">0</span></span>
+                            <span class="text-green-400">{{ lang('criados') }}: <span id="first-import-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{ lang('ignorados') }}: <span id="first-import-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{ lang('falhas') }}: <span id="first-import-failed-count">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -1397,7 +1397,7 @@
     <div id="calendar-modal" class="calendar-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title" class="modal-title">Lançamentos</h3>
+                <h3 id="modal-title" class="modal-title">{{ lang('lancamentos') }}</h3>
                 <button id="modal-close" class="modal-close">&times;</button>
             </div>
             <div id="modal-body" class="modal-body">
@@ -1490,8 +1490,8 @@
                 let currentView = 'month';
 
                 // Utils data PT-BR
-                const ptMonthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                                      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                const ptMonthNames = ['{{ lang("janeiro") }}', '{{ lang("fevereiro") }}', '{{ lang("marco") }}', '{{ lang("abril") }}', '{{ lang("maio") }}', '{{ lang("junho") }}',
+                                      '{{ lang("julho") }}', '{{ lang("agosto") }}', '{{ lang("setembro") }}', '{{ lang("outubro") }}', '{{ lang("novembro") }}', '{{ lang("dezembro") }}'];
                 const ptWeekdayShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
                 const formatISO = (d) => {
@@ -1759,7 +1759,7 @@
                             weekViewEl.classList.add('active');
                         }
                         if (monthYearTitle) {
-                            monthYearTitle.textContent = `Semana de ${formatDateBR(startOfWeek(currentDate))}`;
+                            monthYearTitle.textContent = `{{ lang('semana') }} {{ lang('de') }} ${formatDateBR(startOfWeek(currentDate))}`;
                         }
                     } else if (currentView === 'day') {
                         if (dayViewEl) {
@@ -2073,7 +2073,7 @@
                     const tmdbIds = gatherCalendarTmdbIds(syncType);
                     const total = tmdbIds.length;
                     if (total === 0) {
-                        alert('Nenhum item pendente encontrado para este filtro.');
+                        alert('{{ lang("nenhum") }} {{ lang("item") }} {{ lang("pendente") }} {{ lang("encontrado") }} {{ lang("para") }} {{ lang("este") }} {{ lang("filtro") }}.');
                         toggleSyncButtons(true);
                         progressContainer.style.display = 'none';
                         isBulkSyncRunning = false;
@@ -2135,7 +2135,7 @@
                     
                     toggleSyncButtons(true);
                     isBulkSyncRunning = false;
-                    alert(`Sincronização concluída.\nCriados: ${created} | Atualizados: ${updated} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                    alert(`{{ lang('sincronizacao') }} {{ lang('concluida') }}.\n{{ lang('criados') }}: ${created} | {{ lang('atualizados') }}: ${updated} | {{ lang('ignorados') }}: ${skipped} | {{ lang('falhas') }}: ${failed}\n\n{{ lang('a') }} {{ lang('pagina') }} {{ lang('sera') }} {{ lang('recarregada') }}.`);
                     window.location.reload();
                 }
                 syncButtons.forEach(button => button.addEventListener('click', () => runClientSideSync(button.dataset.syncType)));
@@ -2180,7 +2180,7 @@
                             }
                         }
 
-                        alert(`Importação de filmes concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        alert(`{{ lang('importacao') }} {{ lang('de') }} {{ lang('filmes') }} {{ lang('concluida') }}.\n{{ lang('criados') }}: ${created} | {{ lang('ignorados') }}: ${skipped} | {{ lang('falhas') }}: ${failed}\n\n{{ lang('a') }} {{ lang('pagina') }} {{ lang('sera') }} {{ lang('recarregada') }}.`);
                         window.location.reload();
                     });
                 }
@@ -2266,7 +2266,7 @@
                             }
                         }
 
-                        alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        alert(`{{ lang('importacao') }} {{ lang('de') }} {{ lang('series') }} {{ lang('concluida') }}.\n{{ lang('criados') }}: ${created} | {{ lang('ignorados') }}: ${skipped} | {{ lang('falhas') }}: ${failed}\n\n{{ lang('a') }} {{ lang('pagina') }} {{ lang('sera') }} {{ lang('recarregada') }}.`);
                         window.location.reload();
                     });
                 }
@@ -2395,7 +2395,7 @@
                             }
                         }
 
-                        alert(`Importação de filmes concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        alert(`{{ lang('importacao') }} {{ lang('de') }} {{ lang('filmes') }} {{ lang('concluida') }}.\n{{ lang('criados') }}: ${created} | {{ lang('ignorados') }}: ${skipped} | {{ lang('falhas') }}: ${failed}\n\n{{ lang('a') }} {{ lang('pagina') }} {{ lang('sera') }} {{ lang('recarregada') }}.`);
                         window.location.reload();
                     });
                 }
@@ -2442,7 +2442,7 @@
                             }
                         }
 
-                        alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        alert(`{{ lang('importacao') }} {{ lang('de') }} {{ lang('series') }} {{ lang('concluida') }}.\n{{ lang('criados') }}: ${created} | {{ lang('ignorados') }}: ${skipped} | {{ lang('falhas') }}: ${failed}\n\n{{ lang('a') }} {{ lang('pagina') }} {{ lang('sera') }} {{ lang('recarregada') }}.`);
                         window.location.reload();
                     });
                 }
@@ -2493,7 +2493,7 @@
                             }
                         }
 
-                        alert(`Primeira importação concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        alert(`{{ lang('primeira') }} {{ lang('importacao') }} {{ lang('concluida') }}.\n{{ lang('criados') }}: ${created} | {{ lang('ignorados') }}: ${skipped} | {{ lang('falhas') }}: ${failed}\n\n{{ lang('a') }} {{ lang('pagina') }} {{ lang('sera') }} {{ lang('recarregada') }}.`);
                         window.location.reload();
                     });
                 }
@@ -2523,7 +2523,7 @@
                             const processedCount = successCount + skippedCount + failedCount;
                             const percentage = totalJobs > 0 ? (processedCount / totalJobs) * 100 : 0;
                             document.getElementById('progress-bar').style.width = percentage + '%';
-                            document.getElementById('progress-text').textContent = `Processando ${processedCount} de ${totalJobs}...`;
+                            document.getElementById('progress-text').textContent = `{{ lang('processando') }} ${processedCount} {{ lang('de') }} ${totalJobs}...`;
                             document.getElementById('success-count').textContent = successCount;
                             document.getElementById('skipped-count').textContent = skippedCount;
                             document.getElementById('failed-count').textContent = failedCount;
@@ -2534,7 +2534,7 @@
                         const processJob = async (id) => {
                             const jobElement = document.createElement('div');
                             jobElement.className = 'text-sm p-2 rounded-md bg-gray-50 dark:bg-gray-800';
-                            jobElement.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold text-gray-800 dark:text-gray-200">ID: ${id}</span><span class="job-status font-bold text-blue-500">⚙ Processando...</span></div><p class="job-message text-xs text-gray-500 dark:text-gray-400 mt-1"></p>`;
+                            jobElement.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold text-gray-800 dark:text-gray-200">ID: ${id}</span><span class="job-status font-bold text-blue-500">⚙ {{ lang('processando') }}...</span></div><p class="job-message text-xs text-gray-500 dark:text-gray-400 mt-1"></p>`;
                             document.getElementById('job-details').prepend(jobElement);
                             const jobTitleSpan = jobElement.querySelector('.font-semibold');
                             const jobStatusSpan = jobElement.querySelector('.job-status');
@@ -2553,7 +2553,7 @@
                                 if (response.status === 200) {
                                     successCount++;
                                     jobStatusSpan.className = 'job-status font-bold text-green-500';
-                                    jobStatusSpan.textContent = '✓ Sucesso';
+                                    jobStatusSpan.textContent = '✓ {{ lang("sucesso") }}';
                                     jobMessageP.textContent = result.message.replace(/'([^']*)'/, 'item');
                                 } else if (response.status === 208) {
                                     skippedCount++;
