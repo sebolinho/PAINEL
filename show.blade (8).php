@@ -1303,7 +1303,7 @@
                                 <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
                                     Filmes Disponíveis para Importação
                                     @if(isset($firstImportMovies))
-                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportMovies) }} itens)</span>
+                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportMovies) }} de máx. 500 itens)</span>
                                     @endif
                                 </h4>
                                 <div class="max-h-96 overflow-y-auto">
@@ -1348,7 +1348,7 @@
                                 <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
                                     Séries Disponíveis para Importação
                                     @if(isset($firstImportSeries))
-                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportSeries) }} itens)</span>
+                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportSeries) }} de máx. 500 itens)</span>
                                     @endif
                                 </h4>
                                 <div class="max-h-96 overflow-y-auto">
