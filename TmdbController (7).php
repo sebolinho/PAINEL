@@ -771,7 +771,7 @@ class TmdbController extends Controller
     {
         $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
         if ($key !== $secretKey) {
-            return response('Acesso não autorizado.', 403);
+            return response(__('acesso_nao_autorizado'), 403);
         }
 
         set_time_limit(3600);
@@ -820,7 +820,7 @@ class TmdbController extends Controller
     {
         $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
         if ($key !== $secretKey) {
-            return response('Acesso não autorizado.', 403);
+            return response(__('acesso_nao_autorizado'), 403);
         }
 
         set_time_limit(3600);

@@ -405,5 +405,12 @@
   "desconhecido": "Desconocido",
   "local": "Local",
   "sincronizado": "Sincronizado",
-  "serie_desconhecida": "Serie Desconocida"
+  "serie_desconhecida": "Serie Desconocida",
+  "de": "de",
+  "importar_series_listadas": "Importar Series Listadas",
+  "importando_series": "Importando Series",
+  "acesso_nao_autorizado": "Acceso no autorizado.",
+  "semana_de": "Semana de",
+  "sem_lancamentos_neste_dia": "Sin lanzamientos en este día.",
+  "lanc": "lanc."
 }

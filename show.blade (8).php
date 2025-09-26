@@ -965,7 +965,7 @@
                                             >
                                                 <div class="calendar-day-number">{{ $d }}</div>
                                                 @if($hasEvents)
-                                                    <div class="releases-count {{ $countBadgeClass }}">{{ $dayEvents->count() }} lanç.</div>
+                                                    <div class="releases-count {{ $countBadgeClass }}">{{ $dayEvents->count() }} {{__('lanc')}}.</div>
                                                     <div class="poster-grid">
                                                         @foreach($dayEvents->take(4) as $item)
                                                             @php
@@ -1120,15 +1120,15 @@
                         @elseif(isset($recentMoviesError))
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar filmes recentes</h3>
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('erro_carregar_filmes_recentes')}}</h3>
                                     <p class="mt-1 text-sm text-red-500">{{ $recentMoviesError }}</p>
                                 </td>
                             </tr>
                         @else
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo encontrado</h3>
-                                   <p class="mt-1 text-sm text-gray-500">Todos os filmes recentes da API já parecem estar em seu banco de dados.</p>
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('nenhum_filme_novo_encontrado')}}</h3>
+                                   <p class="mt-1 text-sm text-gray-500">{{__('todos_filmes_recentes_ja_banco')}}</p>
                                 </td>
                             </tr>
                         @endif
@@ -1141,28 +1141,28 @@
                 <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Importar Séries Recentes</h3>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">{{__('importar_series_recentes')}}</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Lista das últimas 100 séries novas da API. Séries que já existem no seu banco de dados não são exibidas.
+                                {{__('lista_ultimas_100_series')}}
                             </p>
                         </div>
                         <button id="start-recent-series-import" class="sync-button">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            Importar Séries Listadas
+                            {{__('importar_series_listadas')}}
                         </button>
                     </div>
                      <div id="recent-series-import-status" class="sync-progress mt-4">
                         <div class="progress-header">
-                            <div class="progress-title">Importando Séries...</div>
-                            <div class="progress-stats" id="recent-series-progress-stats">0/0 processados</div>
+                            <div class="progress-title">{{__('importando_series')}}...</div>
+                            <div class="progress-stats" id="recent-series-progress-stats">0/0 {{__('processados')}}</div>
                         </div>
                         <div class="progress-bar-container">
                             <div class="progress-bar" id="recent-series-progress-bar"></div>
                         </div>
                         <div class="progress-stats">
-                            <span class="text-green-400">Criados: <span id="recent-series-created-count">0</span></span> |
-                            <span class="text-yellow-400">Ignorados: <span id="recent-series-skipped-count">0</span></span> |
-                            <span class="text-red-400">Falhas: <span id="recent-series-failed-count">0</span></span>
+                            <span class="text-green-400">{{__('criados')}}: <span id="recent-series-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{__('ignorados')}}: <span id="recent-series-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{__('falhas')}}: <span id="recent-series-failed-count">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -1236,15 +1236,15 @@
                         @elseif(isset($recentSeriesError))
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar séries recentes</h3>
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('erro_carregar_series_recentes')}}</h3>
                                     <p class="mt-1 text-sm text-red-500">{{ $recentSeriesError }}</p>
                                 </td>
                             </tr>
                         @else
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhuma série nova encontrada</h3>
-                                   <p class="mt-1 text-sm text-gray-500">Todas as séries recentes da API já parecem estar em seu banco de dados.</p>
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('nenhuma_serie_nova_encontrada')}}</h3>
+                                   <p class="mt-1 text-sm text-gray-500">{{__('todas_series_recentes_ja_banco')}}</p>
                                 </td>
                             </tr>
                         @endif
@@ -1599,7 +1599,7 @@
                         const hasSeries = filtered.some(e => (e.content_type ?? '') === 'series');
                         if (hasAnime && !hasSeries) badge.classList.add('anime-only');
                         else if (hasSeries && !hasAnime) badge.classList.add('series-only');
-                        badge.textContent = `${filtered.length} lanç.`;
+                        badge.textContent = `${filtered.length} {{__('lanc')}}.`;
                     }
 
                     cell.querySelector('.poster-grid')?.remove();
@@ -1758,7 +1758,7 @@
                             weekViewEl.classList.add('active');
                         }
                         if (monthYearTitle) {
-                            monthYearTitle.textContent = `Semana de ${formatDateBR(startOfWeek(currentDate))}`;
+                            monthYearTitle.textContent = `{{__('semana_de')}} ${formatDateBR(startOfWeek(currentDate))}`;
                         }
                     } else if (currentView === 'day') {
                         if (dayViewEl) {
@@ -1833,7 +1833,7 @@
                                  data-date="${day.getDate()} de ${ptMonthNames[day.getMonth()]}"
                                  ${events.length ? `data-events="${encodeHtml(JSON.stringify(events))}"` : ''}>
                                 <div class="calendar-day-number">${day.getDate()}</div>
-                                ${events.length ? `<div class="releases-count ${countClass}">${events.length} lanç.</div>` : ''}
+                                ${events.length ? `<div class="releases-count ${countClass}">${events.length} {{__('lanc')}}.</div>` : ''}
                                 ${events.length ? renderPostersHtml(events) : ''}
                             </div>
                         `;
@@ -1847,7 +1847,7 @@
                     const events = getEventsForISO(iso);
                     let html = `<div class="calendar-weekdays"><div class="weekday" style="grid-column: span 7; text-align:left;">${formatDateLongBR(date)}</div></div><div style="padding: 0 15px 15px 15px;">`;
                     if (!events.length) {
-                        html += `<div class="text-sm text-gray-300">Sem lançamentos neste dia.</div>`;
+                        html += `<div class="text-sm text-gray-300">{{__('sem_lancamentos_neste_dia')}}</div>`;
                     } else {
                         events.forEach(item => {
                             const localStatus = item.local_status || 'Pendente';
@@ -1857,23 +1857,23 @@
                             const seasonNumber = item.season || item.season_number || 1;
                             const episodeNumber = item.number || item.episode_number || 1;
                             const contentType = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
-                            const isSynced = localStatus === 'Sincronizado';
+                            const isSynced = localStatus === '{{__('sincronizado')}}';
                             const localCount = item.local_episode_count || 0;
                             const apiCount = item.api_episode_count || 0;
 
                             html += `
-                                <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${(apiStatus === 'Atualizado') ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
+                                <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${(apiStatus === '{{__('atualizado')}}') ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
                                     <div class="episode-header">
                                         <div class="episode-status-group">
-                                            <span class="status-badge ${(apiStatus === 'Atualizado') ? 'status-api-updated' : 'status-api-late'}">API: ${(apiStatus === 'Atualizado') ? 'Atualizado' : (apiStatus || 'Desconhecido')}</span>
-                                            <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">Local: ${isSynced ? 'Sincronizado' : 'Pendente'}</span>
+                                            <span class="status-badge ${(apiStatus === '{{__('atualizado')}}') ? 'status-api-updated' : 'status-api-late'}">{{__('api')}}: ${(apiStatus === '{{__('atualizado')}}') ? '{{__('atualizado')}}' : (apiStatus || '{{__('desconhecido')}}')}</span>
+                                            <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">{{__('local')}}: ${isSynced ? '{{__('sincronizado')}}' : '{{__('pendente')}}'}</span>
                                         </div>
                                     </div>
                                     <div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div>
-                                    <div class="episode-number">Episódio: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
-                                    <div class="episode-sync-info text-xs text-gray-400 mt-2">Status da Série: <b>${localCount} de ${apiCount}</b> episódios no banco de dados.</div>
+                                    <div class="episode-number">{{__('episodio')}}: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
+                                    <div class="episode-sync-info text-xs text-gray-400 mt-2">{{__('status_serie')}}: <b>${localCount} {{__('de')}} ${apiCount}</b> {{__('episodios_banco_dados')}}.</div>
                                     <div class="episode-actions mt-2">
-                                        <button class="sync-single-button js-sync-single-item" title="Sincronizar Série"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg> Sincronizar Série</button>
+                                        <button class="sync-single-button js-sync-single-item" title="{{__('sincronizar_serie')}}"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg> {{__('sincronizar_serie')}}</button>
                                     </div>
                                 </div>`;
                         });
@@ -1905,17 +1905,17 @@
                     modalTitle.textContent = date;
                     modalBody.innerHTML = ''; 
                     eventsData.forEach(item => {
-                        const localStatus = item.local_status || 'Pendente';
+                        const localStatus = item.local_status || '{{__('pendente')}}';
                         const apiStatus = item.status || 'Futuro';
-                        const seriesTitle = item.title || 'Série Desconhecida';
+                        const seriesTitle = item.title || '{{__('serie_desconhecida')}}';
                         const tmdbId = item.tmdb_id || '';
                         const seasonNumber = item.season || item.season_number || 1;
                         const episodeNumber = item.number || item.episode_number || 1;
                         const contentType = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
-                        const isSynced = localStatus === 'Sincronizado';
+                        const isSynced = localStatus === '{{__('sincronizado')}}';
                         const localCount = item.local_episode_count || 0;
                         const apiCount = item.api_episode_count || 0;
-                        const eventHtml = `<div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${apiStatus === 'Atualizado' ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv"><div class="episode-header"><div class="episode-status-group"><span class="status-badge ${apiStatus === 'Atualizado' ? 'status-api-updated' : 'status-api-late'}">API: ${apiStatus === 'Atualizado' ? 'Atualizado' : (apiStatus || 'Desconhecido')}</span><span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">Local: ${isSynced ? 'Sincronizado' : 'Pendente'}</span></div></div><div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div><div class="episode-number">Episódio: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div><div class="episode-sync-info text-xs text-gray-400 mt-2">Status da Série: <b>${localCount} de ${apiCount}</b> episódios no banco de dados.</div><div class="episode-actions mt-2"><button class="sync-single-button js-sync-single-item" title="Sincronizar Série"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" /></svg> Sincronizar Série</button></div></div>`;
+                        const eventHtml = `<div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${apiStatus === '{{__('atualizado')}}' ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv"><div class="episode-header"><div class="episode-status-group"><span class="status-badge ${apiStatus === '{{__('atualizado')}}' ? 'status-api-updated' : 'status-api-late'}">{{__('api')}}: ${apiStatus === '{{__('atualizado')}}' ? '{{__('atualizado')}}' : (apiStatus || '{{__('desconhecido')}}')}</span><span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">{{__('local')}}: ${isSynced ? '{{__('sincronizado')}}' : '{{__('pendente')}}'}</span></div></div><div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div><div class="episode-number">{{__('episodio')}}: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div><div class="episode-sync-info text-xs text-gray-400 mt-2">{{__('status_serie')}}: <b>${localCount} {{__('de')}} ${apiCount}</b> {{__('episodios_banco_dados')}}.</div><div class="episode-actions mt-2"><button class="sync-single-button js-sync-single-item" title="{{__('sincronizar_serie')}}"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" /></svg> {{__('sincronizar_serie')}}</button></div></div>`;
                         modalBody.insertAdjacentHTML('beforeend', eventHtml);
                     });
                     modal.classList.add('show');
