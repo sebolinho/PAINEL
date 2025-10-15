@@ -718,6 +718,7 @@ class TmdbController extends Controller
     
     /**
      * Método para ser chamado via CRON Job para sincronizar todos os itens pendentes do calendário.
+     * Otimizado para evitar estouro de memória e com logging em tempo real.
      */
     public function cronSyncAllPending($key)
     {
@@ -726,7 +727,8 @@ class TmdbController extends Controller
             return response(__('Acesso não autorizado.'), 403);
         }
 
-        set_time_limit(3600); 
+        set_time_limit(3600);
+        ini_set('memory_limit', '256M'); // Aumentar limite de memória se necessário
 
         $calendarData = $this->getEnrichedCalendarData();
         $items = $calendarData['calendarByMonth']->flatten(1);
@@ -734,38 +736,86 @@ class TmdbController extends Controller
         $pendingItems = $items->filter(fn($item) => ($item['local_status'] ?? 'Pendente') === 'Pendente')->unique('tmdb_id');
 
         if ($pendingItems->isEmpty()) {
-            return response('Nenhum item pendente para sincronizar.');
+            $message = 'Nenhum item pendente para sincronizar.';
+            Log::info($message);
+            echo $message . "\n";
+            return response($message);
         }
         
         $created = 0; $updated = 0; $failed = 0; $skipped = 0;
+        $total = $pendingItems->count();
+        
+        Log::info("Iniciando sincronização de {$total} itens pendentes do calendário...");
+        echo "Iniciando sincronização de {$total} itens pendentes do calendário...\n";
 
-        foreach ($pendingItems as $item) {
-            try {
-                $request = new Request(['tmdb_id' => $item['tmdb_id'], 'type' => 'tv']);
-                $response = $this->store($request);
-                $status = $response->getStatusCode();
+        // Processar em chunks para evitar estouro de memória
+        $chunkSize = 50;
+        foreach ($pendingItems->chunk($chunkSize) as $chunkIndex => $chunk) {
+            foreach ($chunk as $item) {
+                try {
+                    $tmdbId = $item['tmdb_id'];
+                    $title = $item['title'] ?? "TMDB ID {$tmdbId}";
+                    
+                    Log::info("Processando série do calendário: {$title} (TMDB ID: {$tmdbId})");
+                    echo "Processando: {$title} (TMDB ID: {$tmdbId})...\n";
+                    
+                    $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'tv']);
+                    $response = $this->store($request);
+                    $status = $response->getStatusCode();
+                    
+                    $responseData = $response->getData();
+                    $message = $responseData->message ?? '';
 
-                if ($status === 200) {
-                    if (str_contains(optional($response->getData())->message, 'updated')) $updated++; else $created++;
-                } elseif ($status === 208) {
-                    $skipped++;
-                } else {
+                    if ($status === 200) {
+                        if (str_contains($message, 'updated')) {
+                            $updated++;
+                            Log::info("✓ Série atualizada: {$title}");
+                            echo "✓ Série atualizada: {$title}\n";
+                        } else {
+                            $created++;
+                            Log::info("✓ Série criada: {$title}");
+                            echo "✓ Série criada: {$title}\n";
+                        }
+                    } elseif ($status === 208) {
+                        $skipped++;
+                        Log::info("⊘ Série ignorada: {$title}");
+                        echo "⊘ Série ignorada: {$title}\n";
+                    } else {
+                        $failed++;
+                        Log::warning("✗ Série falhou: {$title}");
+                        echo "✗ Série falhou: {$title}\n";
+                    }
+                    
+                    // Limpar caches relacionados
+                    Cache::forget('tmdb_series_details_' . $tmdbId);
+                    Cache::forget('tmdb_total_episodes_' . $tmdbId);
+                    
+                } catch (\Exception $e) {
+                    Log::error("CRON Sync (Calendário) Falhou para TMDB ID {$item['tmdb_id']}: " . $e->getMessage());
+                    echo "✗ Erro ao processar TMDB ID {$item['tmdb_id']}: " . $e->getMessage() . "\n";
                     $failed++;
                 }
-            } catch (\Exception $e) {
-                Log::error("CRON Sync (Calendário) Falhou para TMDB ID {$item['tmdb_id']}: " . $e->getMessage());
-                $failed++;
+                
+                // Forçar garbage collection a cada 10 itens
+                if (($created + $updated + $failed + $skipped) % 10 === 0) {
+                    gc_collect_cycles();
+                }
             }
+            
+            // Liberar memória entre chunks
+            gc_collect_cycles();
         }
         
         $summary = "Sincronização (Calendário) via CRON concluída. Criados: {$created}, Atualizados: {$updated}, Ignorados: {$skipped}, Falhas: {$failed}.";
         Log::info($summary);
+        echo "\n" . $summary . "\n";
         
         return response($summary);
     }
 
     /**
      * Método para ser chamado via CRON Job para sincronizar os filmes recentes.
+     * Otimizado para evitar estouro de memória e com logging em tempo real.
      */
     public function cronSyncRecentMovies($key)
     {
@@ -775,46 +825,111 @@ class TmdbController extends Controller
         }
 
         set_time_limit(3600);
+        ini_set('memory_limit', '256M'); // Aumentar limite de memória se necessário
 
         try {
-            $recentMoviesData = $this->getRecentMoviesData();
-            $newMovieIds = collect($recentMoviesData['recentMovies'])->pluck('id')->all();
-
-            if (empty($newMovieIds)) {
-                return response('Nenhum filme novo para sincronizar.');
+            // Buscar IDs de filmes recentes diretamente sem carregar todos os detalhes
+            $response = Http::timeout(30)->get('https://peliplay.lat/puxar_tmdb.php?type=movies&json');
+            if (!$response->successful()) {
+                throw new \Exception('Falha ao buscar a lista de filmes recentes. Código: ' . $response->status());
+            }
+            
+            $ids = $response->json();
+            if (!is_array($ids)) {
+                throw new \Exception('A API de filmes recentes retornou dados em um formato inesperado.');
             }
 
+            $tmdbIds = collect($ids)
+                ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                ->filter(fn($id) => is_numeric($id))
+                ->map(fn($id) => (int)$id);
+
+            $latestTmdbIds = $tmdbIds->take(-100)->values()->all();
+
+            if (empty($latestTmdbIds)) {
+                return response('Nenhum filme novo para sincronizar.');
+            }
+            
+            // Processar em chunks para evitar estouro de memória
+            $chunkSize = 50;
             $created = 0; $failed = 0; $skipped = 0;
+            $total = count($latestTmdbIds);
+            
+            Log::info("Iniciando sincronização de {$total} filmes recentes...");
+            echo "Iniciando sincronização de {$total} filmes recentes...\n";
 
-            foreach ($newMovieIds as $tmdbId) {
-                try {
-                    $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'movie']);
-                    $storeResponse = $this->store($request);
-                    $status = $storeResponse->getStatusCode();
+            foreach (array_chunk($latestTmdbIds, $chunkSize) as $chunkIndex => $chunk) {
+                // Verificar quais filmes já existem neste chunk
+                $existingMovieIds = Post::where('type', 'movie')
+                    ->whereIn('tmdb_id', $chunk)
+                    ->pluck('tmdb_id')
+                    ->all();
+                    
+                $newMovieIds = array_diff($chunk, $existingMovieIds);
+                
+                foreach ($newMovieIds as $tmdbId) {
+                    try {
+                        Log::info("Processando filme TMDB ID: {$tmdbId}");
+                        echo "Processando filme TMDB ID: {$tmdbId}...\n";
+                        
+                        $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'movie']);
+                        $storeResponse = $this->store($request);
+                        $status = $storeResponse->getStatusCode();
+                        
+                        $responseData = $storeResponse->getData();
+                        $movieTitle = $responseData->message ?? "TMDB ID {$tmdbId}";
 
-                    if ($status === 200) $created++;
-                    elseif ($status === 208) $skipped++;
-                    else $failed++;
-                } catch (\Exception $e) {
-                    Log::error("CRON Sync (Filmes) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
-                    $failed++;
+                        if ($status === 200) {
+                            $created++;
+                            Log::info("✓ Filme criado: {$movieTitle}");
+                            echo "✓ Filme criado: {$movieTitle}\n";
+                        } elseif ($status === 208) {
+                            $skipped++;
+                            Log::info("⊘ Filme ignorado: {$movieTitle}");
+                            echo "⊘ Filme ignorado: {$movieTitle}\n";
+                        } else {
+                            $failed++;
+                            Log::warning("✗ Filme falhou: {$movieTitle}");
+                            echo "✗ Filme falhou: {$movieTitle}\n";
+                        }
+                        
+                        // Limpar cache de detalhes após processar
+                        Cache::forget('tmdb_movie_details_' . $tmdbId);
+                        
+                    } catch (\Exception $e) {
+                        Log::error("CRON Sync (Filmes) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
+                        echo "✗ Erro ao processar filme TMDB ID {$tmdbId}: " . $e->getMessage() . "\n";
+                        $failed++;
+                    }
+                    
+                    // Forçar garbage collection a cada 10 itens
+                    if (($created + $failed + $skipped) % 10 === 0) {
+                        gc_collect_cycles();
+                    }
                 }
+                
+                // Liberar memória entre chunks
+                unset($existingMovieIds, $newMovieIds);
+                gc_collect_cycles();
             }
             
             $summary = "Sincronização de filmes via CRON concluída. Criados: {$created}, Ignorados: {$skipped}, Falhas: {$failed}.";
             Log::info($summary);
+            echo "\n" . $summary . "\n";
             
             return response($summary);
 
         } catch (\Exception $e) {
             $errorMsg = "Erro no CRON de filmes recentes: " . $e->getMessage();
             Log::error($errorMsg);
+            echo "ERRO: " . $errorMsg . "\n";
             return response($errorMsg, 500);
         }
     }
 
     /**
      * Método para ser chamado via CRON Job para sincronizar as séries recentes.
+     * Otimizado para evitar estouro de memória e com logging em tempo real.
      */
     public function cronSyncRecentSeries($key)
     {
@@ -824,40 +939,104 @@ class TmdbController extends Controller
         }
 
         set_time_limit(3600);
+        ini_set('memory_limit', '256M'); // Aumentar limite de memória se necessário
 
         try {
-            $recentSeriesData = $this->getRecentSeriesData();
-            $newSeriesIds = collect($recentSeriesData['recentSeries'])->pluck('id')->all();
-
-            if (empty($newSeriesIds)) {
-                return response('Nenhuma série nova para sincronizar.');
+            // Buscar IDs de séries recentes diretamente sem carregar todos os detalhes
+            $response = Http::timeout(30)->get('https://superflixapi.asia/lista?category=serie&type=tmdb&format=json');
+            if (!$response->successful()) {
+                throw new \Exception('Falha ao buscar a lista de séries recentes. Código: ' . $response->status());
+            }
+            
+            $ids = $response->json();
+            if (!is_array($ids)) {
+                throw new \Exception('A API de séries recentes retornou dados em um formato inesperado.');
             }
 
+            $tmdbIds = collect($ids)
+                ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                ->filter(fn($id) => is_numeric($id))
+                ->map(fn($id) => (int)$id);
+
+            $latestTmdbIds = $tmdbIds->take(-100)->values()->all();
+
+            if (empty($latestTmdbIds)) {
+                return response('Nenhuma série nova para sincronizar.');
+            }
+            
+            // Processar em chunks para evitar estouro de memória
+            $chunkSize = 50;
             $created = 0; $failed = 0; $skipped = 0;
+            $total = count($latestTmdbIds);
+            
+            Log::info("Iniciando sincronização de {$total} séries recentes...");
+            echo "Iniciando sincronização de {$total} séries recentes...\n";
 
-            foreach ($newSeriesIds as $tmdbId) {
-                try {
-                    $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'tv']);
-                    $storeResponse = $this->store($request);
-                    $status = $storeResponse->getStatusCode();
+            foreach (array_chunk($latestTmdbIds, $chunkSize) as $chunkIndex => $chunk) {
+                // Verificar quais séries já existem neste chunk
+                $existingSeriesIds = Post::where('type', 'tv')
+                    ->whereIn('tmdb_id', $chunk)
+                    ->pluck('tmdb_id')
+                    ->all();
+                    
+                $newSeriesIds = array_diff($chunk, $existingSeriesIds);
+                
+                foreach ($newSeriesIds as $tmdbId) {
+                    try {
+                        Log::info("Processando série TMDB ID: {$tmdbId}");
+                        echo "Processando série TMDB ID: {$tmdbId}...\n";
+                        
+                        $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'tv']);
+                        $storeResponse = $this->store($request);
+                        $status = $storeResponse->getStatusCode();
+                        
+                        $responseData = $storeResponse->getData();
+                        $seriesTitle = $responseData->message ?? "TMDB ID {$tmdbId}";
 
-                    if ($status === 200) $created++;
-                    elseif ($status === 208) $skipped++;
-                    else $failed++;
-                } catch (\Exception $e) {
-                    Log::error("CRON Sync (Séries) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
-                    $failed++;
+                        if ($status === 200) {
+                            $created++;
+                            Log::info("✓ Série criada/atualizada: {$seriesTitle}");
+                            echo "✓ Série criada/atualizada: {$seriesTitle}\n";
+                        } elseif ($status === 208) {
+                            $skipped++;
+                            Log::info("⊘ Série ignorada: {$seriesTitle}");
+                            echo "⊘ Série ignorada: {$seriesTitle}\n";
+                        } else {
+                            $failed++;
+                            Log::warning("✗ Série falhou: {$seriesTitle}");
+                            echo "✗ Série falhou: {$seriesTitle}\n";
+                        }
+                        
+                        // Limpar cache de detalhes após processar
+                        Cache::forget('tmdb_series_details_' . $tmdbId);
+                        
+                    } catch (\Exception $e) {
+                        Log::error("CRON Sync (Séries) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
+                        echo "✗ Erro ao processar série TMDB ID {$tmdbId}: " . $e->getMessage() . "\n";
+                        $failed++;
+                    }
+                    
+                    // Forçar garbage collection a cada 10 itens
+                    if (($created + $failed + $skipped) % 10 === 0) {
+                        gc_collect_cycles();
+                    }
                 }
+                
+                // Liberar memória entre chunks
+                unset($existingSeriesIds, $newSeriesIds);
+                gc_collect_cycles();
             }
             
             $summary = "Sincronização de séries via CRON concluída. Criados: {$created}, Ignorados: {$skipped}, Falhas: {$failed}.";
             Log::info($summary);
+            echo "\n" . $summary . "\n";
             
             return response($summary);
 
         } catch (\Exception $e) {
             $errorMsg = "Erro no CRON de séries recentes: " . $e->getMessage();
             Log::error($errorMsg);
+            echo "ERRO: " . $errorMsg . "\n";
             return response($errorMsg, 500);
         }
     }
