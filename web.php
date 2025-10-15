@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\TmdbController;
 if (config('settings.language')) {
     App::setLocale(config('settings.language'));
 } else { // This is optional as Laravel will automatically set the fallback language if there is none specified
-    App::setLocale('pt-br');
+    App::setLocale('es');
 }
 /*
 |--------------------------------------------------------------------------
@@ -27,28 +27,29 @@ if (config('settings.landing') == 'active') {
     Route::get('/', [\App\Http\Controllers\IndexController::class, 'index'])->name('index');
 }
 
-// Rotas para Cron Jobs de Sincronização
+// Rutas para Cron Jobs de Sincronización
 Route::get('/cron/sync-all-pending/{key}', [TmdbController::class, 'cronSyncAllPending'])->name('cron.sync.all');
 Route::get('/cron/sync-recent-movies/{key}', [TmdbController::class, 'cronSyncRecentMovies'])->name('cron.sync.movies');
+Route::get('/cron/sync-recent-series/{key}', [TmdbController::class, 'cronSyncRecentSeries'])->name('cron.sync.series');
 
 
 // Navegar
-Route::get(__('navegar'), [App\Http\Controllers\BrowseController::class, 'index'])->name('browse');
-Route::post(__('navegar'), [App\Http\Controllers\BrowseController::class, 'index'])->name('browse');
+Route::get(__('explorar'), [App\Http\Controllers\BrowseController::class, 'index'])->name('browse');
+Route::post(__('explorar'), [App\Http\Controllers\BrowseController::class, 'index'])->name('browse');
 Route::get('/robots.txt', function () {
-    // Obtém a URL atual (com protocolo http ou https)
+    // Obtiene la URL actual (con protocolo http o https)
     $siteUrl = (request()->secure() ? 'https' : 'http') . '://' . request()->getHost();
 
-    // Define o conteúdo do robots.txt
+    // Define el contenido del robots.txt
     $robotsContent = "User-agent: *
 Allow: /
 Disallow: /login
-Disallow: /atores
-Disallow: /colecoes
+Disallow: /actores
+Disallow: /colecciones
 Disallow: /settings
 Disallow: /perfil/
-Disallow: /ator
-Disallow: /ator/
+Disallow: /actor
+Disallow: /actor/
 Disallow: /perfil
 Disallow: /pagina/
 Disallow: /lang/
@@ -60,56 +61,56 @@ Sitemap: {$siteUrl}/sitemap.xml
 Sitemap: {$siteUrl}/sitemap_post_1.xml
     ";
 
-    // Retorna o conteúdo com o tipo de resposta como 'text/plain'
+    // Retorna el contenido con el tipo de respuesta como 'text/plain'
     return response($robotsContent)->header('Content-Type', 'text/plain');
 });
 
 // Top IMDB
-Route::get(__('top-notas'), [App\Http\Controllers\BrowseController::class, 'index'])->name('topimdb');
+Route::get(__('mejor-valoradas'), [App\Http\Controllers\BrowseController::class, 'index'])->name('topimdb');
 
 Route::post('/tmdb/bulk-store', [TmdbController::class, 'bulkStore'])->name('admin.tmdb.bulk.store');
 
-// Filmes
-Route::get(__('filmes'), [App\Http\Controllers\BrowseController::class, 'index'])->name('movies');
+// Películas
+Route::get(__('peliculas'), [App\Http\Controllers\BrowseController::class, 'index'])->name('movies');
 
 // Anime
-Route::get(__('animes'), [App\Http\Controllers\BrowseController::class, 'index'])->name('anime');
+Route::get(__('anime'), [App\Http\Controllers\BrowseController::class, 'index'])->name('anime');
 
-// Séries de TV
+// Series de TV
 Route::get(__('series'), [App\Http\Controllers\BrowseController::class, 'index'])->name('tvshows');
 
-// Transmissões ao Vivo
-Route::get(__('canais-ao-vivo'), [App\Http\Controllers\BrowseController::class, 'broadcasts'])->name('broadcasts');
+// Transmisiones en Vivo
+Route::get(__('canales-en-vivo'), [App\Http\Controllers\BrowseController::class, 'broadcasts'])->name('broadcasts');
 
-// Em Alta
-Route::get(__('em-alta'), [App\Http\Controllers\BrowseController::class, 'index'])->name('trending');
+// Tendencias
+Route::get(__('lo-mas-visto'), [App\Http\Controllers\BrowseController::class, 'index'])->name('trending');
 
-// Gênero
-Route::get(__('categoria') . '/{genre}', [App\Http\Controllers\BrowseController::class, 'index'])->name('genre');
+// Género
+Route::get(__('genero') . '/{genre}', [App\Http\Controllers\BrowseController::class, 'index'])->name('genre');
 
 // País
 Route::get(__('pais') . '/{country}', [App\Http\Controllers\BrowseController::class, 'index'])->name('country');
 
-// Busca
+// Buscar
 Route::get(__('buscar') . '/{search}', [App\Http\Controllers\BrowseController::class, 'index'])->name('search');
 
 // Tag
 Route::get(__('tag') . '/{tag}', [App\Http\Controllers\BrowseController::class, 'tag'])->name('tag');
 
-// Encontre Agora
-Route::get(__('encontre-agora'), [App\Http\Controllers\BrowseController::class, 'find'])->name('browse.find');
+// Encontrar Ahora
+Route::get(__('encontrar-ahora'), [App\Http\Controllers\BrowseController::class, 'find'])->name('browse.find');
 
-// Pessoas
-Route::get(__('pessoas'), [App\Http\Controllers\BrowseController::class, 'community'])->name('peoples');
+// Personas
+Route::get(__('personas'), [App\Http\Controllers\BrowseController::class, 'community'])->name('peoples');
 
 // Solicitar
 Route::get(__('solicitar'), [App\Http\Controllers\BrowseController::class, 'request'])->name('request');
 Route::post(__('solicitar'), [App\Http\Controllers\BrowseController::class, 'requestPost'])->name('requestPost');
 
 
-Route::get(__('filme') . '/{slug}', [App\Http\Controllers\WatchController::class, 'movie'])->name('movie');
-// Rota para o episódio (mais específica)
-Route::get(__('serie') . '/assistir-{slug}-{season}-temporada-{episode}-episodio', [App\Http\Controllers\WatchController::class, 'episode'])
+Route::get(__('pelicula') . '/{slug}', [App\Http\Controllers\WatchController::class, 'movie'])->name('movie');
+// Ruta para el episodio (más específica)
+Route::get(__('serie') . '/ver-{slug}-temporada-{season}-episodio-{episode}', [App\Http\Controllers\WatchController::class, 'episode'])
     ->where([
         'slug' => '[a-z0-9\-]+',
         'season' => '[0-9]+',
@@ -117,61 +118,61 @@ Route::get(__('serie') . '/assistir-{slug}-{season}-temporada-{episode}-episodio
     ])
     ->name('episode');
 
-// Rota para a série (mais genérica)
-Route::get(__('serie') . '/assistir-{slug}', [App\Http\Controllers\WatchController::class, 'tv'])->name('tv');
+// Ruta para la serie (más genérica)
+Route::get(__('serie') . '/ver-{slug}', [App\Http\Controllers\WatchController::class, 'tv'])->name('tv');
 
 
 
-Route::get(__('canais-ao-vivo') . '/{slug}', [App\Http\Controllers\WatchController::class, 'broadcast'])->name('broadcast');
+Route::get(__('canales-en-vivo') . '/{slug}', [App\Http\Controllers\WatchController::class, 'broadcast'])->name('broadcast');
 
 Route::get(__('embed') . '/{id}', [App\Http\Controllers\WatchController::class, 'embed'])->name('embed')->middleware('hotlink');
 
-// User
-Route::get(__('perfil') . '/{username}/liked', [App\Http\Controllers\UserController::class, 'liked'])->name('profile.liked');
-Route::get(__('perfil') . '/{username}/watchlist', [App\Http\Controllers\UserController::class, 'watchlist'])->middleware(['auth'])->name('profile.watchlist');
-Route::get(__('perfil') . '/{username}/community', [App\Http\Controllers\UserController::class, 'community'])->name('profile.community');
-Route::get(__('perfil') . '/{username}/comments', [App\Http\Controllers\UserController::class, 'comments'])->name('profile.comments');
-Route::get(__('perfil') . '/{username}/history', [App\Http\Controllers\UserController::class, 'history'])->middleware(['auth'])->name('profile.history');
+// Usuario
+Route::get(__('perfil') . '/{username}/favoritos', [App\Http\Controllers\UserController::class, 'liked'])->name('profile.liked');
+Route::get(__('perfil') . '/{username}/mi-lista', [App\Http\Controllers\UserController::class, 'watchlist'])->middleware(['auth'])->name('profile.watchlist');
+Route::get(__('perfil') . '/{username}/comunidad', [App\Http\Controllers\UserController::class, 'community'])->name('profile.community');
+Route::get(__('perfil') . '/{username}/comentarios', [App\Http\Controllers\UserController::class, 'comments'])->name('profile.comments');
+Route::get(__('perfil') . '/{username}/historial', [App\Http\Controllers\UserController::class, 'history'])->middleware(['auth'])->name('profile.history');
 
 Route::get(__('perfil') . '/{username}', [App\Http\Controllers\UserController::class, 'index'])->name('profile');
-Route::get(__('settings'), [App\Http\Controllers\UserController::class, 'settings'])->middleware(['auth'])->name('settings');
-Route::post(__('settings'), [App\Http\Controllers\UserController::class, 'update'])->middleware(['auth', 'demo'])->name('settings.update');
-Route::get(__('classificacao'), [App\Http\Controllers\UserController::class, 'leaderboard'])->name('leaderboard');
+Route::get(__('configuracion'), [App\Http\Controllers\UserController::class, 'settings'])->middleware(['auth'])->name('settings');
+Route::post(__('configuracion'), [App\Http\Controllers\UserController::class, 'update'])->middleware(['auth', 'demo'])->name('settings.update');
+Route::get(__('clasificacion'), [App\Http\Controllers\UserController::class, 'leaderboard'])->name('leaderboard');
 
-// Subscription
+// Suscripción
 Route::controller(\App\Http\Controllers\SubscriptionController::class)->middleware(['auth'])->name('subscription.')->group(function () {
-    Route::get('subscription', 'index')->name('index');
-    Route::get('billing', 'billing')->name('billing');
-    Route::get('invoice/{id}', 'invoice')->name('invoice');
-    Route::get('payment', 'payment')->name('payment');
-    Route::get('payment-pending', 'pending')->name('pending');
-    Route::get('payment-cancelled', 'cancelled')->name('cancelled');
-    Route::get('payment-completed', 'completed')->name('completed');
-    Route::post('payment', 'store');
-    Route::post('subscription', 'update')->name('update')->middleware('demo');
-    Route::post('billing', 'cancelSubscription')->name('cancelSubscription')->middleware('demo');
+    Route::get('suscripcion', 'index')->name('index');
+    Route::get('facturacion', 'billing')->name('billing');
+    Route::get('factura/{id}', 'invoice')->name('invoice');
+    Route::get('pago', 'payment')->name('payment');
+    Route::get('pago-pendiente', 'pending')->name('pending');
+    Route::get('pago-cancelado', 'cancelled')->name('cancelled');
+    Route::get('pago-completado', 'completed')->name('completed');
+    Route::post('pago', 'store');
+    Route::post('suscripcion', 'update')->name('update')->middleware('demo');
+    Route::post('facturacion', 'cancelSubscription')->name('cancelSubscription')->middleware('demo');
 });
 
-// Community
-Route::get(__('discussions'), [App\Http\Controllers\BrowseController::class, 'discussions'])->name('discussions');
-Route::get(__('discussion') . '/{slug}', [App\Http\Controllers\BrowseController::class, 'discussion'])->name('discussion');
-Route::post(__('create-discussion'), [App\Http\Controllers\BrowseController::class, 'discussionStore'])->name('discussions.create');
-// People
-Route::get(__('atores'), [App\Http\Controllers\BrowseController::class, 'peoples'])->name('peoples');
-Route::get(__('ator') . '/{slug}', [App\Http\Controllers\BrowseController::class, 'people'])->name('people');
+// Comunidad
+Route::get(__('discusiones'), [App\Http\Controllers\BrowseController::class, 'discussions'])->name('discussions');
+Route::get(__('discusion') . '/{slug}', [App\Http\Controllers\BrowseController::class, 'discussion'])->name('discussion');
+Route::post(__('crear-discusion'), [App\Http\Controllers\BrowseController::class, 'discussionStore'])->name('discussions.create');
+// Personas
+Route::get(__('actores'), [App\Http\Controllers\BrowseController::class, 'peoples'])->name('peoples');
+Route::get(__('actor') . '/{slug}', [App\Http\Controllers\BrowseController::class, 'people'])->name('people');
 
-// Collection
-Route::get(__('colecoes'), [App\Http\Controllers\BrowseController::class, 'collections'])->name('collections');
-Route::get(__('colecao') . '/{slug}', [App\Http\Controllers\BrowseController::class, 'collection'])->name('collection');
+// Colección
+Route::get(__('colecciones'), [App\Http\Controllers\BrowseController::class, 'collections'])->name('collections');
+Route::get(__('coleccion') . '/{slug}', [App\Http\Controllers\BrowseController::class, 'collection'])->name('collection');
 
 // Blog
 Route::get(__('blog'), [App\Http\Controllers\ArticleController::class, 'index'])->name('blog');
-Route::get(__('artigo') . '/{slug}', [App\Http\Controllers\ArticleController::class, 'show'])->name('article');
+Route::get(__('articulo') . '/{slug}', [App\Http\Controllers\ArticleController::class, 'show'])->name('article');
 
-// Page
+// Página
 Route::get(__('pagina') . '/{slug}', [App\Http\Controllers\PageController::class, 'show'])->name('page');
-Route::get(__('contato'), [App\Http\Controllers\PageController::class, 'contact'])->name('contact');
-Route::post(__('contato'), [App\Http\Controllers\PageController::class, 'contactmail'])->name('contact.submit');
+Route::get(__('contacto'), [App\Http\Controllers\PageController::class, 'contact'])->name('contact');
+Route::post(__('contacto'), [App\Http\Controllers\PageController::class, 'contactmail'])->name('contact.submit');
 
 // Ajax
 Route::prefix('ajax')->name('ajax.')->middleware(['auth'])->group(function () {
@@ -188,12 +189,12 @@ Route::get('sitemap_episode_{page}.xml', [App\Http\Controllers\SitemapController
 Route::get('sitemap_people_{page}.xml', [App\Http\Controllers\SitemapController::class, 'people'])->name('sitemap.people');
 Route::get('sitemap_genre_{page}.xml', [App\Http\Controllers\SitemapController::class, 'genre'])->name('sitemap.genre');
 
-// Webhook routes
+// Rutas de Webhook
 
 Route::post('webhooks/paypal', [\App\Http\Controllers\WebhookController::class, 'paypal'])->name('webhooks.paypal');
 Route::post('webhooks/stripe', [\App\Http\Controllers\WebhookController::class, 'stripe'])->name('webhooks.stripe');
 
-// Install
+// Instalar
 Route::controller(App\Http\Controllers\InstallController::class)->name('install.')->group(function () {
     Route::get('install/index', 'index')->name('index');
     Route::get('install/config', 'config')->name('config');
@@ -202,4 +203,3 @@ Route::controller(App\Http\Controllers\InstallController::class)->name('install.
 });
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin.php';
-
