@@ -631,17 +631,32 @@
     </style>
 
     <div class="container-fluid">
+        <!-- Background operations notification -->
+        <div id="background-notification" class="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden">
+            <div class="flex items-center gap-2">
+                <div class="loading-spinner"></div>
+                <span id="background-text">Operações continuando em background...</span>
+                <button id="close-notification" class="ml-2 text-white hover:text-gray-200">×</button>
+            </div>
+        </div>
+        
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden dark:bg-gray-900 dark:border-gray-800">
             <div class="border-b border-gray-200 dark:border-gray-700">
                 <nav class="flex space-x-4 -mb-px px-5" aria-label="Tabs">
                     <button id="tab-import" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
-                        Importar do TMDB
+                        {{__('importar_do_tmdb')}}
                     </button>
                     <button id="tab-calendar" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Calendário de Lançamentos
+                        {{__('calendario_de_lancamentos')}}
                     </button>
                     <button id="tab-recent-movies" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Filmes Recentes
+                        {{__('filmes_recentes')}}
+                    </button>
+                    <button id="tab-recent-series" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        {{__('series_recentes')}}
+                    </button>
+                    <button id="tab-first-import" class="main-tab-button cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        {{__('primeira_importacao')}}
                     </button>
                 </nav>
             </div>
@@ -672,7 +687,7 @@
                 </form>
 
                 <div class="border-t border-gray-200 dark:border-gray-800 px-5 py-4">
-                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">{{ __('Bulk Import (Client-side)') }}</h3>
+                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">{{ __('bulk_import_client_side') }}</h3>
                     <div id="bulk-import-container">
                         <div id="bulk-import-form">
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -684,28 +699,28 @@
                                     </x-form.select>
                                 </div>
                                 <div class="md:col-span-8">
-                                    <x-form.textarea name="bulk_ids" id="bulk_ids" placeholder="{{ __('Enter TMDB or IMDb IDs, one per line or separated by commas.') }}" rows="4"></x-form.textarea>
+                                    <x-form.textarea name="bulk_ids" id="bulk_ids" placeholder="{{ __('enter_tmdb_imdb_ids') }}" rows="4"></x-form.textarea>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <x-form.secondary type="button" id="start-bulk-import" class="w-full h-full">{{ __('Import IDs') }}</x-form.secondary>
+                                    <x-form.secondary type="button" id="start-bulk-import" class="w-full h-full">{{ __('import_ids') }}</x-form.secondary>
                                 </div>
                             </div>
                         </div>
                         
                         <div id="bulk-import-status" class="mt-4 hidden">
                             <div class="flex justify-between items-center">
-                                <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300">Importação em Progresso</h4>
-                                <button id="new-import-button" class="text-sm text-blue-600 hover:underline hidden">{{ __('Start New Import') }}</button>
+                                <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300">{{__('importacao_em_progresso')}}</h4>
+                                <button id="new-import-button" class="text-sm text-blue-600 hover:underline hidden">{{ __('start_new_import') }}</button>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
                                 <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                             </div>
                             <div class="flex justify-between text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">
-                                <span id="progress-text">Processando 0 de 0...</span>
+                                <span id="progress-text">{{__('processando')}} 0 {{__('de')}} 0...</span>
                                 <div>
-                                    <span class="text-green-500">Sucesso: <span id="success-count">0</span></span> | 
-                                    <span class="text-orange-500">Ignorados: <span id="skipped-count">0</span></span> |
-                                    <span class="text-red-500">Falhas: <span id="failed-count">0</span></span>
+                                    <span class="text-green-500">{{__('sucesso')}}: <span id="success-count">0</span></span> | 
+                                    <span class="text-orange-500">{{__('ignorados')}}: <span id="skipped-count">0</span></span> |
+                                    <span class="text-red-500">{{__('falhas')}}: <span id="failed-count">0</span></span>
                                 </div>
                             </div>
                             <div id="job-details" class="mt-4 space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -806,32 +821,32 @@
                         </div>
                         
                         <div class="view-tabs">
-                            <div class="view-tab active" data-view="month">Mês</div>
-                            <div class="view-tab" data-view="week">Semana</div>
-                            <div class="view-tab" data-view="day">Dia</div>
+                            <div class="view-tab active" data-view="month">{{__('mes')}}</div>
+                            <div class="view-tab" data-view="week">{{__('semana')}}</div>
+                            <div class="view-tab" data-view="day">{{__('dia')}}</div>
                         </div>
 
                         @if(isset($calendarStats))
                         <div class="calendar-stats">
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['total'] }}</div>
-                                <div class="stat-label">Total de Items</div>
+                                <div class="stat-label">{{__('total_items')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['series'] }}</div>
-                                <div class="stat-label">Séries</div>
+                                <div class="stat-label">{{__('series')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['animes'] }}</div>
-                                <div class="stat-label">Animes</div>
+                                <div class="stat-label">{{__('animes')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['synchronized'] }}</div>
-                                <div class="stat-label">Sincronizados</div>
+                                <div class="stat-label">{{__('sincronizados')}}</div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-number">{{ $calendarStats['pending'] }}</div>
-                                <div class="stat-label">Pendentes</div>
+                                <div class="stat-label">{{__('pendentes')}}</div>
                             </div>
                         </div>
                         @endif
@@ -841,50 +856,50 @@
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
                                 </svg>
-                                Sincronizar Tudo
+                                {{__('sincronizar_tudo')}}
                             </button>
                             <button class="sync-button series" id="sync-series-button" data-sync-type="series">
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 14.5M14.25 3.104c.251.023.501.05.75.082M19.8 14.5l-2.436 2.436a2.25 2.25 0 01-3.182 0l-5.434-5.435M19.8 14.5V16a2.25 2.25 0 01-2.25 2.25h-5.25m-5.25-14v5.714c0 .597-.237 1.17-.659 1.591L4.204 15.5M2.204 15.5l2.436 2.436a2.25 2.25 0 003.182 0l5.434-5.435M2.204 15.5V14a2.25 2.25 0 012.25-2.25H9.75" />
                                 </svg>
-                                Sincronizar Séries
+                                {{__('sincronizar_series')}}
                             </button>
                             <button class="sync-button anime" id="sync-anime-button" data-sync-type="anime">
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                                 </svg>
-                                Sincronizar Animes
+                                {{__('sincronizar_animes')}}
                             </button>
                             <button class="sync-button retry" id="retry-sync-button" style="display: none;">
                                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
                                 </svg>
-                                Tentar Novamente
+                                {{__('tentar_novamente')}}
                             </button>
                         </div>
 
                         <div class="sync-progress" id="sync-progress">
                             <div class="progress-header">
-                                <div class="progress-title" id="progress-title">Sincronizando...</div>
-                                <div class="progress-stats" id="progress-stats">0/0 processados</div>
+                                <div class="progress-title" id="progress-title">{{__('sincronizando')}}...</div>
+                                <div class="progress-stats" id="progress-stats">0/0 {{__('processados')}}</div>
                             </div>
                             <div class="progress-bar-container">
                                 <div class="progress-bar" id="sync-progress-bar"></div>
                             </div>
                             <div class="progress-stats">
-                                <span class="text-green-400">Criados: <span id="created-count">0</span></span> |
-                                <span class="text-blue-400">Atualizados: <span id="updated-count">0</span></span> |
-                                <span class="text-yellow-400">Ignorados: <span id="sync-skipped-count">0</span></span> |
-                                <span class="text-red-400">Falhas: <span id="sync-failed-count">0</span></span>
+                                <span class="text-green-400">{{__('criados')}}: <span id="created-count">0</span></span> |
+                                <span class="text-blue-400">{{__('atualizados')}}: <span id="updated-count">0</span></span> |
+                                <span class="text-yellow-400">{{__('ignorados')}}: <span id="sync-skipped-count">0</span></span> |
+                                <span class="text-red-400">{{__('falhas')}}: <span id="sync-failed-count">0</span></span>
                             </div>
                         </div>
 
                         <div class="content-filter">
-                            <div class="filter-tab active" data-filter="all">Todos</div>
-                            <div class="filter-tab" data-filter="series">Séries</div>
-                            <div class="filter-tab" data-filter="anime">Animes</div>
-                            <div class="filter-tab" data-filter="pending">Pendentes</div>
-                            <div class="filter-tab" data-filter="synced">Sincronizados</div>
+                            <div class="filter-tab active" data-filter="all">{{__('todos')}}</div>
+                            <div class="filter-tab" data-filter="series">{{__('series')}}</div>
+                            <div class="filter-tab" data-filter="anime">{{__('animes')}}</div>
+                            <div class="filter-tab" data-filter="pending">{{__('pendentes')}}</div>
+                            <div class="filter-tab" data-filter="synced">{{__('sincronizados')}}</div>
                         </div>
                     </div>
 
@@ -902,13 +917,13 @@
                                      data-view="month" 
                                      data-month="{{ $monthKey }}">
                                     <div class="calendar-weekdays">
-                                        <div class="weekday">Dom</div>
-                                        <div class="weekday">Seg</div>
-                                        <div class="weekday">Ter</div>
-                                        <div class="weekday">Qua</div>
-                                        <div class="weekday">Qui</div>
-                                        <div class="weekday">Sex</div>
-                                        <div class="weekday">Sáb</div>
+                                        <div class="weekday">{{__('dom')}}</div>
+                                        <div class="weekday">{{__('seg')}}</div>
+                                        <div class="weekday">{{__('ter')}}</div>
+                                        <div class="weekday">{{__('qua')}}</div>
+                                        <div class="weekday">{{__('qui')}}</div>
+                                        <div class="weekday">{{__('sex')}}</div>
+                                        <div class="weekday">{{__('sab')}}</div>
                                     </div>
                                     
                                     <div class="calendar-grid">
@@ -950,7 +965,7 @@
                                             >
                                                 <div class="calendar-day-number">{{ $d }}</div>
                                                 @if($hasEvents)
-                                                    <div class="releases-count {{ $countBadgeClass }}">{{ $dayEvents->count() }} lanç.</div>
+                                                    <div class="releases-count {{ $countBadgeClass }}">{{ $dayEvents->count() }} {{__('lanc')}}.</div>
                                                     <div class="poster-grid">
                                                         @foreach($dayEvents->take(4) as $item)
                                                             @php
@@ -985,13 +1000,13 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                            </svg>
-                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar calendário</h3>
+                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">{{__('erro_carregar_calendario')}}</h3>
                            <p class="mt-1 text-sm text-red-500">{{ $calendarError }}</p>
                            <button class="mt-4 sync-button retry" onclick="window.location.reload();">
                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" />
                                </svg>
-                               Tentar Novamente
+                               {{__('tentar_novamente')}}
                            </button>
                         </div>
                     @else
@@ -999,8 +1014,8 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                            </svg>
-                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum lançamento encontrado</h3>
-                           <p class="mt-1 text-sm text-gray-500">Não há lançamentos futuros no calendário no momento.</p>
+                           <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-200">{{__('nenhum_lancamento_encontrado')}}</h3>
+                           <p class="mt-1 text-sm text-gray-500">{{__('sem_lancamentos_futuro')}}</p>
                         </div>
                     @endif
                 </div>
@@ -1010,28 +1025,28 @@
                 <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Importar Filmes Recentes</h3>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">{{__('importar_filmes_recentes')}}</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Lista dos últimos 100 filmes novos da API. Filmes que já existem no seu banco de dados não são exibidos.
+                                {{__('lista_ultimos_100_filmes')}}
                             </p>
                         </div>
                         <button id="start-recent-movies-import" class="sync-button">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            Importar Filmes Listados
+                            {{__('importar_filmes_listados')}}
                         </button>
                     </div>
                      <div id="recent-movies-import-status" class="sync-progress mt-4">
                         <div class="progress-header">
-                            <div class="progress-title">Importando Filmes...</div>
-                            <div class="progress-stats" id="recent-movies-progress-stats">0/0 processados</div>
+                            <div class="progress-title">{{__('importando_filmes')}}...</div>
+                            <div class="progress-stats" id="recent-movies-progress-stats">0/0 {{__('processados')}}</div>
                         </div>
                         <div class="progress-bar-container">
                             <div class="progress-bar" id="recent-movies-progress-bar"></div>
                         </div>
                         <div class="progress-stats">
-                            <span class="text-green-400">Criados: <span id="recent-movies-created-count">0</span></span> |
-                            <span class="text-yellow-400">Ignorados: <span id="recent-movies-skipped-count">0</span></span> |
-                            <span class="text-red-400">Falhas: <span id="recent-movies-failed-count">0</span></span>
+                            <span class="text-green-400">{{__('criados')}}: <span id="recent-movies-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{__('ignorados')}}: <span id="recent-movies-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{__('falhas')}}: <span id="recent-movies-failed-count">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -1105,20 +1120,275 @@
                         @elseif(isset($recentMoviesError))
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar filmes recentes</h3>
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('erro_carregar_filmes_recentes')}}</h3>
                                     <p class="mt-1 text-sm text-red-500">{{ $recentMoviesError }}</p>
                                 </td>
                             </tr>
                         @else
                             <tr>
                                 <td colspan="4" class="text-center py-10 px-6">
-                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo encontrado</h3>
-                                   <p class="mt-1 text-sm text-gray-500">Todos os filmes recentes da API já parecem estar em seu banco de dados.</p>
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('nenhum_filme_novo_encontrado')}}</h3>
+                                   <p class="mt-1 text-sm text-gray-500">{{__('todos_filmes_recentes_ja_banco')}}</p>
                                 </td>
                             </tr>
                         @endif
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div id="content-recent-series" class="main-tab-content hidden">
+                <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">{{__('importar_series_recentes')}}</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                {{__('lista_ultimas_100_series')}}
+                            </p>
+                        </div>
+                        <button id="start-recent-series-import" class="sync-button">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            {{__('importar_series_listadas')}}
+                        </button>
+                    </div>
+                     <div id="recent-series-import-status" class="sync-progress mt-4">
+                        <div class="progress-header">
+                            <div class="progress-title">{{__('importando_series')}}...</div>
+                            <div class="progress-stats" id="recent-series-progress-stats">0/0 {{__('processados')}}</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="recent-series-progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="text-green-400">{{__('criados')}}: <span id="recent-series-created-count">0</span></span> |
+                            <span class="text-yellow-400">{{__('ignorados')}}: <span id="recent-series-skipped-count">0</span></span> |
+                            <span class="text-red-400">{{__('falhas')}}: <span id="recent-series-failed-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="">
+                    <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Heading')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Release date')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">{{__('Popularity')}}</div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right">
+                                <div class="text-xs font-medium tracking-tight text-gray-700 dark:text-gray-200">Ações</div>
+                            </th>
+                        </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @if(isset($recentSeries) && count($recentSeries) > 0)
+                            @foreach($recentSeries as $listing)
+                                <tr class="recent-series-row" data-tmdb-id="{{ $listing['id'] ?? ($listing['tmdb_id'] ?? '') }}">
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3">
+                                            <div class="text-sm text-gray-600 dark:text-gray-200 flex items-center space-x-6 group">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-14 overflow-hidden relative">
+                                                    @php $img = $listing['image'] ?? ''; @endphp
+                                                    @if($img)
+                                                        <img src="{{$img}}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium group-hover:underline mb-2">{{ $listing['title'] ?? 'Sem título' }} (ID: {{ $listing['id'] ?? '—' }})</div>
+                                                    <div class="text-xs text-gray-400 dark:text-gray-500">{{ \Illuminate\Support\Str::limit($listing['overview'] ?? '', 80) }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3">
+                                            @php $rd = $listing['release_date'] ?? null; @endphp
+                                            <div class="text-sm text-gray-400 dark:text-gray-500">{{ $rd ? date('Y', strtotime($rd)) : '—' }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3 flex items-center space-x-6">
+                                            @php $va = (float)($listing['vote_average'] ?? 0); @endphp
+                                            <div class="flex max-w-[100px] w-full h-2 bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                                                <div class="flex flex-col justify-center rounded-full overflow-hidden @if($va <5){{'bg-red-500'}}@elseif($va >=5 AND $va <= 7){{'bg-orange-400'}}@elseif($va >7){{'bg-emerald-500'}}@endif"
+                                                    role="progressbar" style="width: {{ ($va / 10) * 100 }}%"
+                                                    aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="text-sm font-medium text-gray-500 dark:text-gray-300">{{ number_format($va, 1) }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="h-px w-px whitespace-nowrap">
+                                        <div class="px-6 py-3 flex justify-end">
+                                            <button type="button" class="sync-single-button js-import-recent-series">
+                                                <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg>
+                                                Importar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @elseif(isset($recentSeriesError))
+                            <tr>
+                                <td colspan="4" class="text-center py-10 px-6">
+                                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('erro_carregar_series_recentes')}}</h3>
+                                    <p class="mt-1 text-sm text-red-500">{{ $recentSeriesError }}</p>
+                                </td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td colspan="4" class="text-center py-10 px-6">
+                                   <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">{{__('nenhuma_serie_nova_encontrada')}}</h3>
+                                   <p class="mt-1 text-sm text-gray-500">{{__('todas_series_recentes_ja_banco')}}</p>
+                                </td>
+                            </tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="content-first-import" class="main-tab-content hidden">
+                <div class="border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Primeira Importação</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Importação completa de todos os filmes e séries da API, ordenados do mais antigo para o mais novo. 
+                                Ideal para configuração inicial do site.
+                            </p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="start-first-import-movies" class="sync-button">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Importar Todos os Filmes
+                            </button>
+                            <button id="start-first-import-series" class="sync-button series">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Importar Todas as Séries
+                            </button>
+                            <button id="start-first-import-all" class="sync-button anime">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Importar Tudo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="first-import-status" class="sync-progress mt-4">
+                        <div class="progress-header">
+                            <div class="progress-title">Primeira Importação...</div>
+                            <div class="progress-stats" id="first-import-progress-stats">0/0 processados</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="first-import-progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="text-green-400">Criados: <span id="first-import-created-count">0</span></span> |
+                            <span class="text-yellow-400">Ignorados: <span id="first-import-skipped-count">0</span></span> |
+                            <span class="text-red-400">Falhas: <span id="first-import-failed-count">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="">
+                    <div class="px-5 py-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Filmes Column -->
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    Filmes Disponíveis para Importação
+                                    @if(isset($firstImportMovies))
+                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportMovies) }} de máx. 500 itens)</span>
+                                    @endif
+                                </h4>
+                                <div class="max-h-96 overflow-y-auto">
+                                    @if(isset($firstImportMovies) && count($firstImportMovies) > 0)
+                                        @foreach($firstImportMovies as $movie)
+                                            <div class="first-import-movie-row flex items-center space-x-4 p-3 border-b border-gray-100 dark:border-gray-800" data-tmdb-id="{{ $movie['id'] ?? '' }}">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-12 overflow-hidden relative flex-shrink-0">
+                                                    @if($movie['image'] ?? '')
+                                                        <img src="{{ $movie['image'] }}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                                        {{ $movie['title'] ?? 'Sem título' }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $movie['release_date'] ? date('Y', strtotime($movie['release_date'])) : '—' }}
+                                                        | ⭐ {{ number_format($movie['vote_average'] ?? 0, 1) }}
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="sync-single-button js-import-first-movie" title="Importar filme">
+                                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    @elseif(isset($firstImportError))
+                                        <div class="text-center py-10">
+                                            <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar filmes</h5>
+                                            <p class="mt-1 text-sm text-red-500">{{ $firstImportError }}</p>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-10">
+                                           <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhum filme novo</h5>
+                                           <p class="mt-1 text-sm text-gray-500">Todos os filmes já estão importados.</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Séries Column -->
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                                    Séries Disponíveis para Importação
+                                    @if(isset($firstImportSeries))
+                                        <span class="text-sm font-normal text-gray-500">({{ count($firstImportSeries) }} de máx. 500 itens)</span>
+                                    @endif
+                                </h4>
+                                <div class="max-h-96 overflow-y-auto">
+                                    @if(isset($firstImportSeries) && count($firstImportSeries) > 0)
+                                        @foreach($firstImportSeries as $series)
+                                            <div class="first-import-series-row flex items-center space-x-4 p-3 border-b border-gray-100 dark:border-gray-800" data-tmdb-id="{{ $series['id'] ?? '' }}">
+                                                <div class="aspect-[2/3] bg-gray-100 rounded-md w-12 overflow-hidden relative flex-shrink-0">
+                                                    @if($series['image'] ?? '')
+                                                        <img src="{{ $series['image'] }}" class="absolute inset-0 object-cover" onerror="this.style.display='none'">
+                                                    @endif
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                                        {{ $series['title'] ?? 'Sem título' }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $series['release_date'] ? date('Y', strtotime($series['release_date'])) : '—' }}
+                                                        | ⭐ {{ number_format($series['vote_average'] ?? 0, 1) }}
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="sync-single-button js-import-first-series" title="Importar série">
+                                                    <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    @elseif(isset($firstImportError))
+                                        <div class="text-center py-10">
+                                            <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Erro ao carregar séries</h5>
+                                            <p class="mt-1 text-sm text-red-500">{{ $firstImportError }}</p>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-10">
+                                           <h5 class="text-sm font-medium text-gray-900 dark:text-gray-200">Nenhuma série nova</h5>
+                                           <p class="mt-1 text-sm text-gray-500">Todas as séries já estão importadas.</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1127,7 +1397,7 @@
     <div id="calendar-modal" class="calendar-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title" class="modal-title">Lançamentos</h3>
+                <h3 id="modal-title" class="modal-title">{{__('lancamentos')}}</h3>
                 <button id="modal-close" class="modal-close">&times;</button>
             </div>
             <div id="modal-body" class="modal-body">
@@ -1139,14 +1409,89 @@
     @push('javascript')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
+                // Page Visibility API para detectar mudanças de aba
+                let isTabActive = true;
+                let backgroundOperationsQueue = [];
+                let isProcessingBackground = false;
+                
+                document.addEventListener('visibilitychange', function() {
+                    isTabActive = !document.hidden;
+                    if (isTabActive && backgroundOperationsQueue.length > 0 && !isProcessingBackground) {
+                        console.log('Tab reativada, processando operações em background...');
+                        processBackgroundQueue();
+                    }
+                });
+                
+                // Função para adicionar operações à fila de background
+                function addToBackgroundQueue(operation) {
+                    backgroundOperationsQueue.push(operation);
+                }
+                
+                // Processa operações que ficaram pendentes enquanto a aba estava inativa
+                async function processBackgroundQueue() {
+                    if (isProcessingBackground || backgroundOperationsQueue.length === 0) return;
+                    isProcessingBackground = true;
+                    
+                    try {
+                        while (backgroundOperationsQueue.length > 0) {
+                            const operation = backgroundOperationsQueue.shift();
+                            await operation();
+                            updateBackgroundNotification();
+                            // Permite que a UI seja atualizada
+                            await new Promise(resolve => setTimeout(resolve, 10));
+                        }
+                        hideBackgroundNotification();
+                        
+                        // Atualiza o texto de progresso quando todas as operações de background terminarem
+                        const progressText = document.getElementById('progress-text');
+                        if (progressText && progressText.textContent.includes('background')) {
+                            // Se ainda está mostrando texto de background, atualiza para "Concluída"
+                            progressText.textContent = 'Importação Concluída!';
+                        }
+                    } finally {
+                        isProcessingBackground = false;
+                    }
+                }
+                
+                // Funções para controlar a notificação de background
+                function showBackgroundNotification(count) {
+                    const notification = document.getElementById('background-notification');
+                    const text = document.getElementById('background-text');
+                    if (notification && text) {
+                        text.textContent = `${count} operações continuando em background...`;
+                        notification.classList.remove('hidden');
+                    }
+                }
+                
+                function updateBackgroundNotification() {
+                    const notification = document.getElementById('background-notification');
+                    const text = document.getElementById('background-text');
+                    if (notification && text && backgroundOperationsQueue.length > 0) {
+                        text.textContent = `${backgroundOperationsQueue.length} operações restantes em background...`;
+                    }
+                }
+                
+                function hideBackgroundNotification() {
+                    const notification = document.getElementById('background-notification');
+                    if (notification) {
+                        notification.classList.add('hidden');
+                    }
+                }
+                
+                // Event listener para fechar a notificação
+                document.addEventListener('click', function(e) {
+                    if (e.target.id === 'close-notification') {
+                        hideBackgroundNotification();
+                    }
+                });
+                
                 // Estado
                 let currentDate = new Date();
                 let currentView = 'month';
 
                 // Utils data PT-BR
-                const ptMonthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                                      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                const ptWeekdayShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                const ptMonthNames = [@foreach(['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'] as $month)'{{__($month)}}'@if(!$loop->last), @endif @endforeach];
+                const ptWeekdayShort = [@foreach(['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as $day)'{{__($day)}}'@if(!$loop->last), @endif @endforeach];
 
                 const formatISO = (d) => {
                     const y = d.getFullYear();
@@ -1254,7 +1599,7 @@
                         const hasSeries = filtered.some(e => (e.content_type ?? '') === 'series');
                         if (hasAnime && !hasSeries) badge.classList.add('anime-only');
                         else if (hasSeries && !hasAnime) badge.classList.add('series-only');
-                        badge.textContent = `${filtered.length} lanç.`;
+                        badge.textContent = `${filtered.length} {{__('lanc')}}.`;
                     }
 
                     cell.querySelector('.poster-grid')?.remove();
@@ -1413,7 +1758,7 @@
                             weekViewEl.classList.add('active');
                         }
                         if (monthYearTitle) {
-                            monthYearTitle.textContent = `Semana de ${formatDateBR(startOfWeek(currentDate))}`;
+                            monthYearTitle.textContent = `{{__('semana_de')}} ${formatDateBR(startOfWeek(currentDate))}`;
                         }
                     } else if (currentView === 'day') {
                         if (dayViewEl) {
@@ -1488,7 +1833,7 @@
                                  data-date="${day.getDate()} de ${ptMonthNames[day.getMonth()]}"
                                  ${events.length ? `data-events="${encodeHtml(JSON.stringify(events))}"` : ''}>
                                 <div class="calendar-day-number">${day.getDate()}</div>
-                                ${events.length ? `<div class="releases-count ${countClass}">${events.length} lanç.</div>` : ''}
+                                ${events.length ? `<div class="releases-count ${countClass}">${events.length} {{__('lanc')}}.</div>` : ''}
                                 ${events.length ? renderPostersHtml(events) : ''}
                             </div>
                         `;
@@ -1502,7 +1847,7 @@
                     const events = getEventsForISO(iso);
                     let html = `<div class="calendar-weekdays"><div class="weekday" style="grid-column: span 7; text-align:left;">${formatDateLongBR(date)}</div></div><div style="padding: 0 15px 15px 15px;">`;
                     if (!events.length) {
-                        html += `<div class="text-sm text-gray-300">Sem lançamentos neste dia.</div>`;
+                        html += `<div class="text-sm text-gray-300">{{__('sem_lancamentos_neste_dia')}}</div>`;
                     } else {
                         events.forEach(item => {
                             const localStatus = item.local_status || 'Pendente';
@@ -1512,23 +1857,23 @@
                             const seasonNumber = item.season || item.season_number || 1;
                             const episodeNumber = item.number || item.episode_number || 1;
                             const contentType = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
-                            const isSynced = localStatus === 'Sincronizado';
+                            const isSynced = localStatus === '{{__('sincronizado')}}';
                             const localCount = item.local_episode_count || 0;
                             const apiCount = item.api_episode_count || 0;
 
                             html += `
-                                <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${(apiStatus === 'Atualizado') ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
+                                <div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${(apiStatus === '{{__('atualizado')}}') ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv">
                                     <div class="episode-header">
                                         <div class="episode-status-group">
-                                            <span class="status-badge ${(apiStatus === 'Atualizado') ? 'status-api-updated' : 'status-api-late'}">API: ${(apiStatus === 'Atualizado') ? 'Atualizado' : (apiStatus || 'Desconhecido')}</span>
-                                            <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">Local: ${isSynced ? 'Sincronizado' : 'Pendente'}</span>
+                                            <span class="status-badge ${(apiStatus === '{{__('atualizado')}}') ? 'status-api-updated' : 'status-api-late'}">{{__('api')}}: ${(apiStatus === '{{__('atualizado')}}') ? '{{__('atualizado')}}' : (apiStatus || '{{__('desconhecido')}}')}</span>
+                                            <span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">{{__('local')}}: ${isSynced ? '{{__('sincronizado')}}' : '{{__('pendente')}}'}</span>
                                         </div>
                                     </div>
                                     <div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div>
-                                    <div class="episode-number">Episódio: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
-                                    <div class="episode-sync-info text-xs text-gray-400 mt-2">Status da Série: <b>${localCount} de ${apiCount}</b> episódios no banco de dados.</div>
+                                    <div class="episode-number">{{__('episodio')}}: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div>
+                                    <div class="episode-sync-info text-xs text-gray-400 mt-2">{{__('status_serie')}}: <b>${localCount} {{__('de')}} ${apiCount}</b> {{__('episodios_banco_dados')}}.</div>
                                     <div class="episode-actions mt-2">
-                                        <button class="sync-single-button js-sync-single-item" title="Sincronizar Série"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg> Sincronizar Série</button>
+                                        <button class="sync-single-button js-sync-single-item" title="{{__('sincronizar_serie')}}"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-3.181-4.991v4.991h-4.992a4.5 4.5 0 01-4.5-4.5v-4.5m0 0h4.993v4.992h-4.993v-4.992z" /></svg> {{__('sincronizar_serie')}}</button>
                                     </div>
                                 </div>`;
                         });
@@ -1560,17 +1905,17 @@
                     modalTitle.textContent = date;
                     modalBody.innerHTML = ''; 
                     eventsData.forEach(item => {
-                        const localStatus = item.local_status || 'Pendente';
+                        const localStatus = item.local_status || '{{__('pendente')}}';
                         const apiStatus = item.status || 'Futuro';
-                        const seriesTitle = item.title || 'Série Desconhecida';
+                        const seriesTitle = item.title || '{{__('serie_desconhecida')}}';
                         const tmdbId = item.tmdb_id || '';
                         const seasonNumber = item.season || item.season_number || 1;
                         const episodeNumber = item.number || item.episode_number || 1;
                         const contentType = (item.content_type ?? '') === 'anime' ? 'anime' : 'series';
-                        const isSynced = localStatus === 'Sincronizado';
+                        const isSynced = localStatus === '{{__('sincronizado')}}';
                         const localCount = item.local_episode_count || 0;
                         const apiCount = item.api_episode_count || 0;
-                        const eventHtml = `<div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${apiStatus === 'Atualizado' ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv"><div class="episode-header"><div class="episode-status-group"><span class="status-badge ${apiStatus === 'Atualizado' ? 'status-api-updated' : 'status-api-late'}">API: ${apiStatus === 'Atualizado' ? 'Atualizado' : (apiStatus || 'Desconhecido')}</span><span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">Local: ${isSynced ? 'Sincronizado' : 'Pendente'}</span></div></div><div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div><div class="episode-number">Episódio: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div><div class="episode-sync-info text-xs text-gray-400 mt-2">Status da Série: <b>${localCount} de ${apiCount}</b> episódios no banco de dados.</div><div class="episode-actions mt-2"><button class="sync-single-button js-sync-single-item" title="Sincronizar Série"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" /></svg> Sincronizar Série</button></div></div>`;
+                        const eventHtml = `<div class="episode-item ${contentType} ${isSynced ? 'local-synced' : 'local-pending'} ${apiStatus === '{{__('atualizado')}}' ? 'api-updated' : 'api-late'} js-modal-item" data-tmdb-id="${tmdbId}" data-type="tv"><div class="episode-header"><div class="episode-status-group"><span class="status-badge ${apiStatus === '{{__('atualizado')}}' ? 'status-api-updated' : 'status-api-late'}">{{__('api')}}: ${apiStatus === '{{__('atualizado')}}' ? '{{__('atualizado')}}' : (apiStatus || '{{__('desconhecido')}}')}</span><span class="status-badge ${isSynced ? 'status-local-synced' : 'status-local-pending'} status-local">{{__('local')}}: ${isSynced ? '{{__('sincronizado')}}' : '{{__('pendente')}}'}</span></div></div><div class="episode-title">${seriesTitle} (ID: ${tmdbId})</div><div class="episode-number">{{__('episodio')}}: T${seasonNumber}E${String(episodeNumber).padStart(2, '0')}</div><div class="episode-sync-info text-xs text-gray-400 mt-2">{{__('status_serie')}}: <b>${localCount} {{__('de')}} ${apiCount}</b> {{__('episodios_banco_dados')}}.</div><div class="episode-actions mt-2"><button class="sync-single-button js-sync-single-item" title="{{__('sincronizar_serie')}}"><svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185" /></svg> {{__('sincronizar_serie')}}</button></div></div>`;
                         modalBody.insertAdjacentHTML('beforeend', eventHtml);
                     });
                     modal.classList.add('show');
@@ -1735,7 +2080,9 @@
                     }
                     let processed = 0, created = 0, updated = 0, skipped = 0, failed = 0;
                     updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
-                    for (const tmdbId of tmdbIds) {
+                    
+                    // Função para processar um item individual
+                    const processItem = async (tmdbId) => {
                         const formData = new FormData();
                         formData.append('_token', '{{ csrf_token() }}');
                         formData.append('type', 'tv');
@@ -1749,9 +2096,42 @@
                         } catch (e) { failed++; }
                         finally {
                             processed++;
-                            await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed); resolve(); }));
+                            // Se a aba não estiver ativa, usa setTimeout em vez de requestAnimationFrame
+                            const updateUI = () => {
+                                updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
+                            };
+                            
+                            if (isTabActive) {
+                                await new Promise(resolve => requestAnimationFrame(() => { updateUI(); resolve(); }));
+                            } else {
+                                await new Promise(resolve => setTimeout(() => { updateUI(); resolve(); }, 50));
+                            }
+                        }
+                    };
+                    
+                    // Processa todos os itens, continuando mesmo se a aba ficar inativa
+                    for (const tmdbId of tmdbIds) {
+                        if (isTabActive) {
+                            await processItem(tmdbId);
+                        } else {
+                            // Se a aba não estiver ativa, adiciona à fila de background
+                            addToBackgroundQueue(() => processItem(tmdbId));
+                            // Simula processamento para atualizar UI
+                            processed++;
+                            failed++;
+                            updateProgressUI(processed, total, progressBar, progressStats, createdCountEl, updatedCountEl, skippedCountEl, failedCountEl, created, updated, skipped, failed);
                         }
                     }
+                    
+                    // Se houver operações pendentes, mostra uma mensagem
+                    if (backgroundOperationsQueue.length > 0) {
+                        showBackgroundNotification(backgroundOperationsQueue.length);
+                        toggleSyncButtons(true);
+                        isBulkSyncRunning = false;
+                        alert(`Operações continuarão em background. ${backgroundOperationsQueue.length} itens serão processados quando você retornar à aba.`);
+                        return;
+                    }
+                    
                     toggleSyncButtons(true);
                     isBulkSyncRunning = false;
                     alert(`Sincronização concluída.\nCriados: ${created} | Atualizados: ${updated} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
@@ -1804,6 +2184,319 @@
                     });
                 }
 
+                // Importação por linha (Séries Recentes)
+                const recentSeriesContainer = document.getElementById('content-recent-series');
+                if (recentSeriesContainer) {
+                    recentSeriesContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-recent-series');
+                        if (!btn) return;
+                        const row = btn.closest('.recent-series-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'tv');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    });
+                }
+                
+                const startRecentSeriesBtn = document.getElementById('start-recent-series-import');
+                if (startRecentSeriesBtn) {
+                    startRecentSeriesBtn.addEventListener('click', async () => {
+                        const seriesRows = document.querySelectorAll('#content-recent-series .recent-series-row');
+                        const ids = Array.from(seriesRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhuma série nova para importar.'); return;
+                        }
+                        startRecentSeriesBtn.disabled = true;
+                        startRecentSeriesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('recent-series-import-status');
+                        const pBar = document.getElementById('recent-series-progress-bar');
+                        const pStats = document.getElementById('recent-series-progress-stats');
+                        const pCreated = document.getElementById('recent-series-created-count');
+                        const pSkipped = document.getElementById('recent-series-skipped-count');
+                        const pFailed = document.getElementById('recent-series-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'tv');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // First Import functionality
+                const firstImportContainer = document.getElementById('content-first-import');
+                if (firstImportContainer) {
+                    // Individual movie import
+                    firstImportContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-first-movie');
+                        if (!btn) return;
+                        const row = btn.closest('.first-import-movie-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div>';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'movie');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    });
+
+                    // Individual series import
+                    firstImportContainer.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('.js-import-first-series');
+                        if (!btn) return;
+                        const row = btn.closest('.first-import-series-row');
+                        const tmdbId = row?.dataset.tmdbId;
+                        if (!tmdbId) {
+                            alert('TMDB ID inválido.');
+                            return;
+                        }
+                        const originalHtml = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="loading-spinner"></div>';
+                        const fd = new FormData();
+                        fd.append('_token', '{{ csrf_token() }}');
+                        fd.append('type', 'tv');
+                        fd.append('tmdb_id', tmdbId);
+                        try {
+                            const resp = await fetch("{{ route('admin.tmdb.store') }}", {
+                                method: 'POST',
+                                body: fd,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            });
+                            let body = {};
+                            try { body = await resp.json(); } catch {}
+                            if (resp.status === 200 || resp.status === 208) {
+                                alert(body.message || 'Importação concluída.');
+                                row?.remove();
+                            } else {
+                                alert(body.message || 'Falha na importação.');
+                            }
+                        } catch (err) {
+                            alert('Erro de comunicação com o servidor.');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHtml;
+                        }
+                    });
+                }
+
+                // Bulk import for first import - Movies
+                const startFirstImportMoviesBtn = document.getElementById('start-first-import-movies');
+                if (startFirstImportMoviesBtn) {
+                    startFirstImportMoviesBtn.addEventListener('click', async () => {
+                        const movieRows = document.querySelectorAll('#content-first-import .first-import-movie-row');
+                        const ids = Array.from(movieRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhum filme disponível para importação.'); return;
+                        }
+                        if (!confirm(`Deseja importar ${ids.length} filmes? Esta operação pode demorar.`)) return;
+                        
+                        startFirstImportMoviesBtn.disabled = true;
+                        startFirstImportMoviesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('first-import-status');
+                        const pBar = document.getElementById('first-import-progress-bar');
+                        const pStats = document.getElementById('first-import-progress-stats');
+                        const pCreated = document.getElementById('first-import-created-count');
+                        const pSkipped = document.getElementById('first-import-skipped-count');
+                        const pFailed = document.getElementById('first-import-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'movie');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de filmes concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // Bulk import for first import - Series
+                const startFirstImportSeriesBtn = document.getElementById('start-first-import-series');
+                if (startFirstImportSeriesBtn) {
+                    startFirstImportSeriesBtn.addEventListener('click', async () => {
+                        const seriesRows = document.querySelectorAll('#content-first-import .first-import-series-row');
+                        const ids = Array.from(seriesRows).map(row => row.dataset.tmdbId).filter(Boolean);
+                        if (ids.length === 0) {
+                            alert('Nenhuma série disponível para importação.'); return;
+                        }
+                        if (!confirm(`Deseja importar ${ids.length} séries? Esta operação pode demorar.`)) return;
+                        
+                        startFirstImportSeriesBtn.disabled = true;
+                        startFirstImportSeriesBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('first-import-status');
+                        const pBar = document.getElementById('first-import-progress-bar');
+                        const pStats = document.getElementById('first-import-progress-stats');
+                        const pCreated = document.getElementById('first-import-created-count');
+                        const pSkipped = document.getElementById('first-import-skipped-count');
+                        const pFailed = document.getElementById('first-import-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = ids.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const tmdbId of ids) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', 'tv');
+                            formData.append('tmdb_id', tmdbId);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Importação de séries concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
+                // Bulk import for first import - All (Movies + Series)
+                const startFirstImportAllBtn = document.getElementById('start-first-import-all');
+                if (startFirstImportAllBtn) {
+                    startFirstImportAllBtn.addEventListener('click', async () => {
+                        const movieRows = document.querySelectorAll('#content-first-import .first-import-movie-row');
+                        const seriesRows = document.querySelectorAll('#content-first-import .first-import-series-row');
+                        const movieIds = Array.from(movieRows).map(row => ({id: row.dataset.tmdbId, type: 'movie'})).filter(item => item.id);
+                        const seriesIds = Array.from(seriesRows).map(row => ({id: row.dataset.tmdbId, type: 'tv'})).filter(item => item.id);
+                        const allIds = [...movieIds, ...seriesIds];
+                        
+                        if (allIds.length === 0) {
+                            alert('Nenhum conteúdo disponível para importação.'); return;
+                        }
+                        if (!confirm(`Deseja importar ${movieIds.length} filmes e ${seriesIds.length} séries (${allIds.length} itens total)? Esta operação pode demorar muito.`)) return;
+                        
+                        startFirstImportAllBtn.disabled = true;
+                        startFirstImportAllBtn.innerHTML = '<div class="loading-spinner"></div> Importando...';
+                        const statusDiv = document.getElementById('first-import-status');
+                        const pBar = document.getElementById('first-import-progress-bar');
+                        const pStats = document.getElementById('first-import-progress-stats');
+                        const pCreated = document.getElementById('first-import-created-count');
+                        const pSkipped = document.getElementById('first-import-skipped-count');
+                        const pFailed = document.getElementById('first-import-failed-count');
+                        showProgress(statusDiv, pBar, pStats, pCreated, null, pSkipped, pFailed);
+                        
+                        let processed = 0, created = 0, skipped = 0, failed = 0;
+                        const total = allIds.length;
+                        updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed);
+
+                        for (const item of allIds) {
+                             const formData = new FormData();
+                            formData.append('_token', '{{ csrf_token() }}');
+                            formData.append('type', item.type);
+                            formData.append('tmdb_id', item.id);
+                            try {
+                                const response = await fetch("{{ route('admin.tmdb.store') }}", { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'} });
+                                if (response.status === 200) created++;
+                                else if (response.status === 208) skipped++;
+                                else failed++;
+                            } catch (e) { failed++; }
+                            finally {
+                                processed++;
+                                await new Promise(resolve => requestAnimationFrame(() => { updateProgressUI(processed, total, pBar, pStats, pCreated, null, pSkipped, pFailed, created, 0, skipped, failed); resolve(); }));
+                            }
+                        }
+
+                        alert(`Primeira importação concluída.\nCriados: ${created} | Ignorados: ${skipped} | Falhas: ${failed}\n\nA página será recarregada.`);
+                        window.location.reload();
+                    });
+                }
+
 
                 const startButton = document.getElementById('start-bulk-import');
                 const bulkImportForm = document.getElementById('bulk-import-form');
@@ -1835,7 +2528,9 @@
                             document.getElementById('failed-count').textContent = failedCount;
                         };
                         updateOverallProgress();
-                        for (const id of ids) {
+                        
+                        // Função para processar um job individual
+                        const processJob = async (id) => {
                             const jobElement = document.createElement('div');
                             jobElement.className = 'text-sm p-2 rounded-md bg-gray-50 dark:bg-gray-800';
                             jobElement.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold text-gray-800 dark:text-gray-200">ID: ${id}</span><span class="job-status font-bold text-blue-500">⚙ Processando...</span></div><p class="job-message text-xs text-gray-500 dark:text-gray-400 mt-1"></p>`;
@@ -1877,8 +2572,28 @@
                                 jobMessageP.textContent = 'Erro de rede ou resposta inválida do servidor.';
                             }
                             updateOverallProgress();
+                        };
+                        
+                        // Processa todos os IDs, continuando mesmo se a aba ficar inativa
+                        for (const id of ids) {
+                            if (isTabActive) {
+                                await processJob(id);
+                            } else {
+                                // Se a aba não estiver ativa, adiciona à fila de background
+                                addToBackgroundQueue(() => processJob(id));
+                                // Jobs em background não devem ser marcados como falhas
+                                // Eles serão processados quando a aba ficar ativa novamente
+                            }
                         }
-                        document.getElementById('progress-text').textContent = 'Importação Concluída!';
+                        
+                        // Se houver operações pendentes, mostra uma mensagem
+                        const processedCount = successCount + skippedCount + failedCount;
+                        if (backgroundOperationsQueue.length > 0) {
+                            showBackgroundNotification(backgroundOperationsQueue.length);
+                            document.getElementById('progress-text').textContent = `Processados ${processedCount} de ${totalJobs}... (${backgroundOperationsQueue.length} itens continuarão em background)`;
+                        } else {
+                            document.getElementById('progress-text').textContent = processedCount === totalJobs ? 'Importação Concluída!' : `Processados ${processedCount} de ${totalJobs}...`;
+                        }
                         newImportButton.classList.remove('hidden');
                     });
                 }
