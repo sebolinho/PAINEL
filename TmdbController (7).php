@@ -142,7 +142,7 @@ class TmdbController extends Controller
      *
      * @return array
      */
-    private function getEnrichedCalendarData(): array
+    public function getEnrichedCalendarData(): array
     {
         $calendarByMonth = collect();
         $calendarError = null;
@@ -241,7 +241,7 @@ class TmdbController extends Controller
      *
      * @return array
      */
-    private function getRecentMoviesData(): array
+    public function getRecentMoviesData(): array
     {
         $recentMovies = [];
         $recentMoviesError = null;
@@ -318,7 +318,7 @@ class TmdbController extends Controller
      *
      * @return array
      */
-    private function getRecentSeriesData(): array
+    public function getRecentSeriesData(): array
     {
         $recentSeries = [];
         $recentSeriesError = null;
