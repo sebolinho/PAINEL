@@ -34,11 +34,15 @@ class TmdbController extends Controller
 
         $calendarData = $this->getEnrichedCalendarData();
         $recentMoviesData = $this->getRecentMoviesData();
+        $recentSeriesData = $this->getRecentSeriesData();
+        $firstImportData = $this->getFirstImportData();
 
         return view('admin.tmdb.show', array_merge(
             compact('config', 'request'),
             $calendarData,
-            $recentMoviesData
+            $recentMoviesData,
+            $recentSeriesData,
+            $firstImportData
         ));
     }
     
@@ -121,11 +125,15 @@ class TmdbController extends Controller
         
         $calendarData = $this->getEnrichedCalendarData();
         $recentMoviesData = $this->getRecentMoviesData();
+        $recentSeriesData = $this->getRecentSeriesData();
+        $firstImportData = $this->getFirstImportData();
 
         return view('admin.tmdb.show', array_merge(
             compact('config', 'request', 'listings', 'result'),
             $calendarData,
-            $recentMoviesData
+            $recentMoviesData,
+            $recentSeriesData,
+            $firstImportData
         ));
     }
     
@@ -154,11 +162,16 @@ class TmdbController extends Controller
 
             $tmdbIds = collect($rawCalendarData)->pluck('tmdb_id')->unique()->filter()->values()->all();
 
-            $localCounts = Post::whereIn('tmdb_id', $tmdbIds)
-                ->where('type', 'tv')
-                ->withCount('episodes')
-                ->get()
-                ->pluck('episodes_count', 'tmdb_id');
+            // Usar chunks para evitar problemas de memória com muitos IDs
+            $localCounts = collect();
+            foreach (array_chunk($tmdbIds, 100) as $chunk) {
+                $chunkCounts = Post::whereIn('tmdb_id', $chunk)
+                    ->where('type', 'tv')
+                    ->withCount('episodes')
+                    ->get()
+                    ->pluck('episodes_count', 'tmdb_id');
+                $localCounts = $localCounts->merge($chunkCounts);
+            }
 
             $apiCounts = [];
             foreach ($tmdbIds as $id) {
@@ -234,7 +247,7 @@ class TmdbController extends Controller
         $recentMoviesError = null;
 
         try {
-            $response = Http::timeout(30)->get('https://superflixapi.asia/lista?category=movie&type=tmdb&format=json');
+            $response = Http::timeout(30)->get('https://peliplay.lat/puxar_tmdb.php?type=movies&json');
             if (!$response->successful()) {
                 throw new \Exception('Falha ao buscar a lista de filmes recentes. Código: ' . $response->status());
             }
@@ -300,6 +313,192 @@ class TmdbController extends Controller
         return compact('recentMovies', 'recentMoviesError');
     }
 
+    /**
+     * Busca dados de séries recentes de uma API externa.
+     *
+     * @return array
+     */
+    private function getRecentSeriesData(): array
+    {
+        $recentSeries = [];
+        $recentSeriesError = null;
+
+        try {
+            $response = Http::timeout(30)->get('https://superflixapi.asia/lista?category=serie&type=tmdb&format=json');
+            if (!$response->successful()) {
+                throw new \Exception('Falha ao buscar a lista de séries recentes. Código: ' . $response->status());
+            }
+            
+            $ids = $response->json();
+            if (!is_array($ids)) {
+                throw new \Exception('A API de séries recentes retornou dados em um formato inesperado (não é um JSON array).');
+            }
+
+            $tmdbIds = collect($ids)
+                ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                ->filter(fn($id) => is_numeric($id))
+                ->map(fn($id) => (int)$id);
+
+            $latestTmdbIds = $tmdbIds->take(-100)->values()->all();
+
+            if (empty($latestTmdbIds)) {
+                return compact('recentSeries', 'recentSeriesError');
+            }
+            
+            $existingSeriesIds = Post::where('type', 'tv')
+                ->whereIn('tmdb_id', $latestTmdbIds)
+                ->pluck('tmdb_id')
+                ->all();
+                
+            $newSeriesIds = array_values(array_diff($latestTmdbIds, $existingSeriesIds));
+
+            foreach ($newSeriesIds as $id) {
+                // Buscar e montar dados consistentes para a view
+                $details = Cache::remember('tmdb_series_details_' . $id, 1440, function () use ($id) {
+                    try {
+                        return $this->tmdbApiTrait('tv', $id);
+                    } catch (\Throwable $e) {
+                        Log::warning("Falha ao buscar detalhes do TMDB para série {$id}: " . $e->getMessage());
+                        return null;
+                    }
+                });
+
+                if (!$details || empty($details['title'])) {
+                    Log::warning("Série recente com TMDB ID {$id} foi ignorada por falta de detalhes (ex: título).");
+                    continue;
+                }
+
+                $image = $details['image'] ?? null;
+                if (!$image && !empty($details['poster'])) {
+                    $image = 'https://image.tmdb.org/t/p/w200' . $details['poster'];
+                }
+
+                $recentSeries[] = [
+                    'id' => (int)($details['tmdb_id'] ?? $id),
+                    'title' => $details['title'] ?? 'Sem título',
+                    'overview' => $details['overview'] ?? '',
+                    'release_date' => $details['release_date'] ?? '',
+                    'vote_average' => $details['vote_average'] ?? 0,
+                    'image' => $image ?: '',
+                ];
+            }
+        } catch (\Exception $e) {
+            $recentSeriesError = $e->getMessage();
+            Log::error("Erro ao buscar séries recentes: " . $recentSeriesError);
+        }
+
+        return compact('recentSeries', 'recentSeriesError');
+    }
+
+    /**
+     * Busca dados de filmes e séries para primeira importação com limite de memória.
+     * Limita o número de itens e usa processamento em chunks para evitar estouro de memória.
+     *
+     * @return array
+     */
+    private function getFirstImportData(): array
+    {
+        $firstImportMovies = [];
+        $firstImportSeries = [];
+        $firstImportError = null;
+        
+        // Limitar a 500 itens por tipo para evitar problemas de memória
+        $maxItemsPerType = 500;
+        $chunkSize = 100; // Processar IDs em chunks de 100
+
+        try {
+            // Buscar filmes
+            $movieResponse = Http::timeout(30)->get('https://superflixapi.asia/lista?category=movie&type=tmdb&format=json');
+            if ($movieResponse->successful()) {
+                $movieIds = $movieResponse->json();
+                if (is_array($movieIds)) {
+                    $tmdbMovieIds = collect($movieIds)
+                        ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                        ->filter(fn($id) => is_numeric($id))
+                        ->map(fn($id) => (int)$id)
+                        ->take($maxItemsPerType); // Limitar a quantidade de IDs
+
+                    $allMovieIds = $tmdbMovieIds->values()->all();
+
+                    if (!empty($allMovieIds)) {
+                        // Processar IDs em chunks para evitar queries muito grandes
+                        $existingMovieIds = [];
+                        foreach (array_chunk($allMovieIds, $chunkSize) as $chunk) {
+                            $chunkExisting = Post::where('type', 'movie')
+                                ->whereIn('tmdb_id', $chunk)
+                                ->pluck('tmdb_id')
+                                ->all();
+                            $existingMovieIds = array_merge($existingMovieIds, $chunkExisting);
+                        }
+                            
+                        $newMovieIds = array_values(array_diff($allMovieIds, $existingMovieIds));
+
+                        foreach ($newMovieIds as $id) {
+                            // Para evitar timeout do Cloudflare na primeira carga da página,
+                            // não fazemos chamadas à API TMDB aqui. Apenas retornamos os IDs.
+                            $firstImportMovies[] = [
+                                'id' => (int)$id,
+                                'title' => 'ID: ' . $id, // Título temporário apenas com o ID
+                                'overview' => '',
+                                'release_date' => '',
+                                'vote_average' => 0,
+                                'image' => '',
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Buscar séries
+            $seriesResponse = Http::timeout(30)->get('https://superflixapi.asia/lista?category=serie&type=tmdb&format=json');
+            if ($seriesResponse->successful()) {
+                $seriesIds = $seriesResponse->json();
+                if (is_array($seriesIds)) {
+                    $tmdbSeriesIds = collect($seriesIds)
+                        ->map(fn($id) => is_string($id) ? trim($id) : $id)
+                        ->filter(fn($id) => is_numeric($id))
+                        ->map(fn($id) => (int)$id)
+                        ->take($maxItemsPerType); // Limitar a quantidade de IDs
+
+                    $allSeriesIds = $tmdbSeriesIds->values()->all();
+
+                    if (!empty($allSeriesIds)) {
+                        // Processar IDs em chunks para evitar queries muito grandes
+                        $existingSeriesIds = [];
+                        foreach (array_chunk($allSeriesIds, $chunkSize) as $chunk) {
+                            $chunkExisting = Post::where('type', 'tv')
+                                ->whereIn('tmdb_id', $chunk)
+                                ->pluck('tmdb_id')
+                                ->all();
+                            $existingSeriesIds = array_merge($existingSeriesIds, $chunkExisting);
+                        }
+                            
+                        $newSeriesIds = array_values(array_diff($allSeriesIds, $existingSeriesIds));
+
+                        foreach ($newSeriesIds as $id) {
+                            // Para evitar timeout do Cloudflare na primeira carga da página,
+                            // não fazemos chamadas à API TMDB aqui. Apenas retornamos os IDs.
+                            $firstImportSeries[] = [
+                                'id' => (int)$id,
+                                'title' => 'ID: ' . $id, // Título temporário apenas com o ID
+                                'overview' => '',
+                                'release_date' => '',
+                                'vote_average' => 0,
+                                'image' => '',
+                            ];
+                        }
+                    }
+                }
+            }
+
+        } catch (\Exception $e) {
+            $firstImportError = $e->getMessage();
+            Log::error("Erro ao buscar dados para primeira importação: " . $firstImportError);
+        }
+
+        return compact('firstImportMovies', 'firstImportSeries', 'firstImportError');
+    }
+
     public function settings(Request $request)
     {
         $config = ['title' => __('Tool'), 'nav' => 'tool'];
@@ -326,24 +525,24 @@ class TmdbController extends Controller
 
             $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
             if (empty($postArray)) {
-                return response()->json(['message' => 'Não foi possível obter dados do TMDB.'], 404);
+                return response()->json(['message' => __('nao_foi_possivel_obter_dados_tmdb')], 404);
             }
             
             unset($postArray['tags']);
             $tags = [];
             if (!empty($postArray['title'])) {
-                $tags[] = 'assistir ' . $postArray['title'];
-                $tags[] = 'onde assistir ' . $postArray['title'];
-                $tags[] = 'assistir online' . $postArray['title'];
-                $tags[] = $postArray['title'] . ' online';
+                $tags[] = __('assistir') . ' ' . $postArray['title'];
+                $tags[] = __('onde_assistir') . ' ' . $postArray['title'];
+                $tags[] = __('assistir_online') . ' ' . $postArray['title'];
+                $tags[] = $postArray['title'] . ' ' . __('online');
             }
             if (!empty($postArray['title_sub'])) {
-                $tags[] = 'Ver ' . $postArray['title_sub'];
-                $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+                $tags[] = __('ver') . ' ' . $postArray['title_sub'];
+                $tags[] = __('ver') . ' ' . $postArray['title_sub'] . ' ' . __('online');
             }
             if (!empty($postArray['release_date'])) {
                 $year = date('Y', strtotime($postArray['release_date']));
-                $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+                $tags[] = __('assistir') . ' ' . $postArray['title'] . ' ' . $year;
             }
             $postArray['tags'] = $tags;
 
@@ -353,7 +552,7 @@ class TmdbController extends Controller
             $isUpdate = false;
             if ($existingPost) {
                 if ($request->type === 'movie') {
-                    return response()->json(['message' => "Filme '{$postArray['title']}' já existe, ignorado."], 208);
+                    return response()->json(['message' => __('Movie') . " '{$postArray['title']}' " . __('ja_existe_ignorado')], 208);
                 }
                 
                 $isUpdate = true;
@@ -367,7 +566,7 @@ class TmdbController extends Controller
                 $dbEpisodeCount = $existingPost->episodes()->count();
 
                 if ($apiEpisodeCount > 0 && $dbEpisodeCount >= $apiEpisodeCount) {
-                    return response()->json(['message' => "Série '{$postArray['title']}' já está atualizada, ignorada."], 208);
+                    return response()->json(['message' => __('TV Show') . " '{$postArray['title']}' " . __('ja_esta_atualizada_ignorada')], 208);
                 }
                 
                 $model = $existingPost;
@@ -469,7 +668,7 @@ class TmdbController extends Controller
             return response()->json(['message' => $message], 200);
 
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro: ' . $e->getMessage() . ' na linha ' . $e->getLine()], 500);
+            return response()->json(['message' => __('erro') . ': ' . $e->getMessage() . ' na linha ' . $e->getLine()], 500);
         }
     }
 
@@ -478,34 +677,34 @@ class TmdbController extends Controller
         $postArray = $this->tmdbApiTrait($request->type, $request->tmdb_id);
 
         if (empty($postArray)) {
-            return response()->json(['message' => "Não foi possível encontrar dados para o ID informado."], 404);
+            return response()->json(['message' => __('nao_foi_possivel_obter_dados_tmdb')], 404);
         }
 
         unset($postArray['tags']);
         $tags = [];
         if (!empty($postArray['title'])) {
-            $tags[] = 'assistir ' . $postArray['title'];
-            $tags[] = 'onde assistir ' . $postArray['title'];
-            $tags[] = $postArray['title'] . ' online';
-            $tags[] = $postArray['title'] . ' completo dublado';
-            $tags[] = $postArray['title'] . ' grátis';
-            $tags[] = 'filme completo ' . $postArray['title'];
+            $tags[] = __('assistir') . ' ' . $postArray['title'];
+            $tags[] = __('onde_assistir') . ' ' . $postArray['title'];
+            $tags[] = $postArray['title'] . ' ' . __('online');
+            $tags[] = $postArray['title'] . ' ' . __('completo_dublado');
+            $tags[] = $postArray['title'] . ' ' . __('gratis');
+            $tags[] = __('filme_completo') . ' ' . $postArray['title'];
         }
         if (!empty($postArray['title_sub'])) {
-            $tags[] = 'Ver ' . $postArray['title_sub'];
-            $tags[] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $tags[] = __('ver') . ' ' . $postArray['title_sub'];
+            $tags[] = __('ver') . ' ' . $postArray['title_sub'] . ' ' . __('online');
         }
         if (!empty($postArray['release_date'])) {
             $year = date('Y', strtotime($postArray['release_date']));
-            $tags[] = 'assistir ' . $postArray['title'] . ' ' . $year;
+            $tags[] = __('assistir') . ' ' . $postArray['title'] . ' ' . $year;
         }
         $postArray['tags'] = $tags;
 
         if (!empty($postArray['title_sub'])) {
-            $postArray['title_sub'] = 'Ver ' . $postArray['title_sub'] . ' online';
+            $postArray['title_sub'] = __('ver') . ' ' . $postArray['title_sub'] . ' ' . __('online');
         }
         if (!empty($postArray['overview'])) {
-            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ver filme online';
+            $postArray['overview'] = $postArray['title'] . ' ' . $postArray['overview'] . ' ver filme ' . __('online');
         }
 
         return response()->json($postArray);
@@ -524,7 +723,7 @@ class TmdbController extends Controller
     {
         $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
         if ($key !== $secretKey) {
-            return response('Acesso não autorizado.', 403);
+            return response(__('Acesso não autorizado.'), 403);
         }
 
         set_time_limit(3600); 
@@ -572,7 +771,7 @@ class TmdbController extends Controller
     {
         $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
         if ($key !== $secretKey) {
-            return response('Acesso não autorizado.', 403);
+            return response(__('acesso_nao_autorizado'), 403);
         }
 
         set_time_limit(3600);
@@ -609,6 +808,55 @@ class TmdbController extends Controller
 
         } catch (\Exception $e) {
             $errorMsg = "Erro no CRON de filmes recentes: " . $e->getMessage();
+            Log::error($errorMsg);
+            return response($errorMsg, 500);
+        }
+    }
+
+    /**
+     * Método para ser chamado via CRON Job para sincronizar as séries recentes.
+     */
+    public function cronSyncRecentSeries($key)
+    {
+        $secretKey = env('CRON_SYNC_KEY', 'SUA_CHAVE_SECRETA_PADRAO');
+        if ($key !== $secretKey) {
+            return response(__('acesso_nao_autorizado'), 403);
+        }
+
+        set_time_limit(3600);
+
+        try {
+            $recentSeriesData = $this->getRecentSeriesData();
+            $newSeriesIds = collect($recentSeriesData['recentSeries'])->pluck('id')->all();
+
+            if (empty($newSeriesIds)) {
+                return response('Nenhuma série nova para sincronizar.');
+            }
+
+            $created = 0; $failed = 0; $skipped = 0;
+
+            foreach ($newSeriesIds as $tmdbId) {
+                try {
+                    $request = new Request(['tmdb_id' => $tmdbId, 'type' => 'tv']);
+                    $storeResponse = $this->store($request);
+                    $status = $storeResponse->getStatusCode();
+
+                    if ($status === 200) $created++;
+                    elseif ($status === 208) $skipped++;
+                    else $failed++;
+                } catch (\Exception $e) {
+                    Log::error("CRON Sync (Séries) Falhou para TMDB ID {$tmdbId}: " . $e->getMessage());
+                    $failed++;
+                }
+            }
+            
+            $summary = "Sincronização de séries via CRON concluída. Criados: {$created}, Ignorados: {$skipped}, Falhas: {$failed}.";
+            Log::info($summary);
+            
+            return response($summary);
+
+        } catch (\Exception $e) {
+            $errorMsg = "Erro no CRON de séries recentes: " . $e->getMessage();
             Log::error($errorMsg);
             return response($errorMsg, 500);
         }
